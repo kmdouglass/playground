@@ -44,11 +44,22 @@ def bezier(
     ctrl_pts: npt.NDArray[np.float64],
     property: Property = Property.POSITION,
 ) -> npt.NDArray[np.float64]:
+    """Compute a property of the cubic Bezier curve defined by ctrl_pts at the given times."""
     t = np.asanyarray(times)
     powers = np.power(t, [0, 1, 2, 3])
 
     return np.linalg.multi_dot((powers, CHAR_MATRIX[property.value], ctrl_pts))
+
+
+def tangent(
+    times: npt.ArrayLike,
+    ctrl_pts: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """Compute the tangent to a cubic Bezier curve at the given times."""
+    velocity = bezier(times, ctrl_pts, property=Property.VELOCITY)
     
+    return velocity / np.linalg.norm(velocity)
+
 
 if __name__ == "__main__":
     control_points = np.array(
@@ -70,11 +81,11 @@ if __name__ == "__main__":
     plt.plot(control_points[:, 0], control_points[:, 1], "o")
     plt.plot(B[:, 0], B[:, 1])
     
-    # Plot velocity at specific times
-    t_vels = np.linspace(0, 1, 5)
-    for t_vel in t_vels:
-        pos = bezier(t_vel, control_points)
-        vel = bezier(t_vel, control_points, Property.VELOCITY)
+    # Plot tangent at specific times
+    t_tans = np.linspace(0, 1, 5)
+    for t_tan in t_tans:
+        pos = bezier(t_tan, control_points)
+        vel = tangent(t_tan, control_points)
         plt.arrow(pos[0], pos[1], vel[0], vel[1], head_width=0.05)
 
     plt.grid(True)
