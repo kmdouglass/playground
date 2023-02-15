@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "curves"
+version = "0.1.0"
+description = "Computational geometry of curves in space"
+authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+matplotlib = "*"
+numpy = "*"
+python = "^3.8"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
