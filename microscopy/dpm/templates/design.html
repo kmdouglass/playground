@@ -9,9 +9,40 @@
     <h1>Inputs</h1>
     <table>
         <tr>
+            <th>Component</th>
+            <th>Property</th>
+            <th>Value</th>
+            <th>Units</th>
+        </tr>
+        <tr>
             <td>Objective</td>
             <td>Magnification</td>
             <td>{{ data["objective.magnification"] }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Objective</td>
+            <td>Numerical Aperture</td>
+            <td>{{ data["objective.numerical_aperture"] }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Camera</td>
+            <td>Pixel size</td>
+            <td>{{ data["camera.pixel_size"] }}</td>
+            <td>{{ data["camera.pixel_size.units"] }}</td>
+        </tr>
+        <tr>
+            <td>Camera</td>
+            <td>Number of pixels (horizontal)</td>
+            <td>{{ data["camera.horizontal_number_of_pixels"] }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Camera</td>
+            <td>Number of pixels (vertical)</td>
+            <td>{{ data["camera.vertical_number_of_pixels"] }}</td>
+            <td></td>
         </tr>
     </table>
 
