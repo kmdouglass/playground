@@ -13,6 +13,8 @@ data = {
     "objective.numerical_aperture": 0.4,
     "camera.pixel_size": 5,
     "camera.pixel_size.units": Units.um,
+    "camera.horizontal_number_of_pixels": 512,
+    "camera.vertical_number_of_pixels": 512,
     "light_source.wavelength": 0.64,
     "light_source.wavelength.units": Units.um,
     "grating.period": 1000/300,
@@ -70,8 +72,30 @@ def system_magnification(data: dict[str, Any]) -> float:
     return -data["objective.magnification"] * mag_4f
 
 
+def field_of_view_horizontal(data: dict[str, Any]) -> tuple[float, Units]:
+    """Computes the horizontal field of view in the object space."""
+
+    px_size = data["camera.pixel_size"] * data["camera.pixel_size.units"].value
+    mag_4f = actual_4f_magnification(data)
+
+    fov_h = data["camera.horizontal_number_of_pixels"] * px_size / data["objective.magnification"] / abs(mag_4f) / Units.um.value
+
+    return fov_h, Units.um
+
+
+def field_of_view_vertical(data: dict[str, Any]) -> tuple[float, Units]:
+    """Computes the vertical field of view in the object space."""
+
+    px_size = data["camera.pixel_size"] * data["camera.pixel_size.units"].value
+    mag_4f = actual_4f_magnification(data)
+
+    fov_v = data["camera.vertical_number_of_pixels"] * px_size / data["objective.magnification"] / abs(mag_4f) / Units.um.value
+
+    return fov_v, Units.um
+
+
 def fourier_plane_spacing(data: dict[str, Any]) -> tuple[float, Units]:
-    """The spacing between the centers of the 0 and +1 orders in the Fourier plane."""
+    """Computes the spacing between the centers of the 0 and +1 orders in the Fourier plane."""
 
     f1 = data["lens_1.focal_length"] * data["lens_1.focal_length.units"].value
     wav = data["light_source.wavelength"] * data["light_source.wavelength.units"].value
@@ -86,4 +110,6 @@ if __name__ == "__main__":
     print(minimum_4f_magnification(data))
     print(actual_4f_magnification(data))
     print(system_magnification(data))
+    print(field_of_view_horizontal(data))
+    print(field_of_view_vertical(data))
     print(fourier_plane_spacing(data))
