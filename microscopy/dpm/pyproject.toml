@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "kmdouglass.dpm"
+version = "0.0.0"
+description = "Tools for diffraction phase microscopes"
+authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "kmdouglass", from = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
