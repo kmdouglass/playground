@@ -10,6 +10,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
+Jinja2 = "*"
 python = "^3.8"
 
 [build-system]

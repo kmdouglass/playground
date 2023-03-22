@@ -104,12 +104,29 @@ def fourier_plane_spacing(data: dict[str, Any]) -> tuple[float, Units]:
     return f1 * wav / gr_period / Units.mm.value, Units.mm
 
 
+def run(data: dict[str, Any]) -> dict[str, Any]:
+    """Performs all design computations."""
+
+    res = resolution(data)
+    gr = maximum_grating_period(data)
+    return {
+        "resolution": res[0],
+        "resolution.units": res[1],
+        "maximum_grating_period": gr[0],
+        "maximum_grating_period.units": gr[1],
+
+    }
+
+
 if __name__ == "__main__":
-    print(resolution(data))
-    print(maximum_grating_period(data))
-    print(minimum_4f_magnification(data))
-    print(actual_4f_magnification(data))
-    print(system_magnification(data))
-    print(field_of_view_horizontal(data))
-    print(field_of_view_vertical(data))
-    print(fourier_plane_spacing(data))
+    from jinja2 import Environment, FileSystemLoader
+
+    environment = Environment(loader=FileSystemLoader("templates/"))
+    template = environment.get_template("design.html")
+
+    results = run(data)
+
+    content = template.render(data=data, results=results)
+
+    with open("output.html", mode="w", encoding="utf-8") as file:
+        file.write(content)

@@ -1,0 +1,33 @@
+{# templates/design.html #}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Design of a Diffraction Phase Microscope</title>
+</head>
+<body>
+
+    <h1>Inputs</h1>
+    <table>
+        <tr>
+            <td>Objective</td>
+            <td>Magnification</td>
+            <td>{{ data["objective.magnification"] }}</td>
+        </tr>
+    </table>
+
+    <h1>Calculated Parameters</h1>
+    <table>
+        <tr>
+            <td>Resolution</td>
+            <td>{{ results["resolution"] }}</td>
+            <td>{{ results["resolution.units"] }}</td>
+        </tr>
+        <tr>
+            <td>Maximum grating period</td>
+            <td>{{ results["maximum_grating_period"] }}</td>
+            <td>{{ results["maximum_grating_period.units"] }}</td>
+        </tr>
+    </table>
+
+</body>
+</html>
