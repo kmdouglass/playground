@@ -62,8 +62,17 @@ def actual_4f_magnification(data: dict[str, Any]) -> float:
     return -f2 / f1
 
 
+def system_magnification(data: dict[str, Any]) -> float:
+    """Computes the magnification of the entire system."""
+
+    mag_4f = actual_4f_magnification(data)
+    
+    return -data["objective.magnification"] * mag_4f
+
+
 if __name__ == "__main__":
     print(resolution(data))
     print(maximum_grating_period(data))
     print(minimum_4f_magnification(data))
     print(actual_4f_magnification(data))
+    print(system_magnification(data))
