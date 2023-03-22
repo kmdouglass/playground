@@ -70,9 +70,20 @@ def system_magnification(data: dict[str, Any]) -> float:
     return -data["objective.magnification"] * mag_4f
 
 
+def fourier_plane_spacing(data: dict[str, Any]) -> tuple[float, Units]:
+    """The spacing between the centers of the 0 and +1 orders in the Fourier plane."""
+
+    f1 = data["lens_1.focal_length"] * data["lens_1.focal_length.units"].value
+    wav = data["light_source.wavelength"] * data["light_source.wavelength.units"].value
+    gr_period = data["grating.period"] * data["grating.period.units"].value
+
+    return f1 * wav / gr_period / Units.mm.value, Units.mm
+
+
 if __name__ == "__main__":
     print(resolution(data))
     print(maximum_grating_period(data))
     print(minimum_4f_magnification(data))
     print(actual_4f_magnification(data))
     print(system_magnification(data))
+    print(fourier_plane_spacing(data))
