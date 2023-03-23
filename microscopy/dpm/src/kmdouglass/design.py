@@ -104,6 +104,15 @@ def fourier_plane_spacing(data: dict[str, Any]) -> tuple[float, Units]:
     return f1 * wav / gr_period / Units.mm.value, Units.mm
 
 
+def minimum_lens_1_na(data: dict[str, Any]) -> float:
+    """Computes the minimum  NA of the first Fourier lens to avoid clipping the +1 diffracted order."""
+
+    wav = data["light_source.wavelength"] * data["light_source.wavelength.units"].value
+    gr_period = data["grating.period"] * data["grating.period.units"].value
+
+    return wav / gr_period +  data["objective.numerical_aperture"] / data["objective.magnification"]
+
+
 def run(data: dict[str, Any]) -> dict[str, Any]:
     """Performs all design computations."""
 
@@ -114,7 +123,7 @@ def run(data: dict[str, Any]) -> dict[str, Any]:
         "resolution.units": res[1],
         "maximum_grating_period": gr[0],
         "maximum_grating_period.units": gr[1],
-
+        "minimum_lens_1_na": minimum_lens_1_na(data),
     }
 
 
