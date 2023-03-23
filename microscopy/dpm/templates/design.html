@@ -65,10 +65,22 @@
             <td>{{ data["lens_1.focal_length.units"] }}</td>
         </tr>
         <tr>
+            <td>Fourier lens 1</td>
+            <td>Clear aperture</td>
+            <td>{{ data["lens_1.clear_aperture"] }}</td>
+            <td>{{ data["lens_1.clear_aperture.units"] }}</td>
+        </tr>
+        <tr>
             <td>Fourier lens 2</td>
             <td>Focal length</td>
             <td>{{ data["lens_2.focal_length"] }}</td>
             <td>{{ data["lens_2.focal_length.units"] }}</td>
+        </tr>
+        <tr>
+            <td>Fourier lens 2</td>
+            <td>Clear aperture</td>
+            <td>{{ data["lens_2.clear_aperture"] }}</td>
+            <td>{{ data["lens_2.clear_aperture.units"] }}</td>
         </tr>
     </table>
 
@@ -85,14 +97,34 @@
             <td>{{ results["resolution.units"] }}</td>
         </tr>
         <tr>
+            <td>Camera diagonal size</td>
+            <td>{{ results["camera_diagonal"] }}</td>
+            <td>{{ results["camera_diagonal.units"] }}</td>
+        </tr>
+        <tr>
             <td>Maximum grating period</td>
             <td>{{ results["maximum_grating_period"] }}</td>
             <td>{{ results["maximum_grating_period.units"] }}</td>
         </tr>
         <tr>
-            <td>Minimum Fourier lens 1 NA</td>
+            <td>Minimum NA of Fourier lens 1</td>
             <td>{{ results["minimum_lens_1_na"] }}</td>
             <td></td>
+        </tr>
+        <tr>
+            <td>Actual NA of Fourier lens 1</td>
+            <td>{{ results["lens_1_na"] }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Actual NA of Fourier lens 2</td>
+            <td>{{ results["lens_2_na"] }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Maximum pinhole diameter</td>
+            <td>{{ results["maximum_pinhole_diameter"] }}</td>
+            <td>{{ results["maximum_pinhole_diameter.units"] }}</td>
         </tr>
     </table>
 
