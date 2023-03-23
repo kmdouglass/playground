@@ -27,7 +27,7 @@ data = {
     "lens_2.focal_length.units": Units.mm,
     "lens_2.clear_aperture": 45.72,
     "lens_2.clear_aperture.units": Units.mm,
-    "pinhole.diameter": 20,
+    "pinhole.diameter": 30,
     "pinhole.diameter.units": Units.um,
     "misc.central_lobe_size_factor": 4,
 }
@@ -136,9 +136,9 @@ def minimum_lens_2_na(data: dict[str, Any]) -> float:
     wav = data["light_source.wavelength"] * data["light_source.wavelength.units"].value
     gr_period = data["grating.period"] * data["grating.period.units"].value
     mag_4f = actual_4f_magnification(data)
+    pinhole_diam = data["pinhole.diameter"] * data["pinhole.diameter.units"].value
 
-
-    raise NotImplementedError
+    return wav / abs(mag_4f) / gr_period + 1.22 * wav / pinhole_diam
 
 
 def lens_na(focal_length: float, clear_aperture: float) -> float:
@@ -192,6 +192,7 @@ def compute_results(data: dict[str, Any]) -> dict[str, Any]:
         "maximum_grating_period": gr[0],
         "maximum_grating_period.units": gr[1],
         "minimum_lens_1_na": minimum_lens_1_na(data),
+        "minimum_lens_2_na": minimum_lens_2_na(data),
         "lens_1_na": lens_1_na(data),
         "lens_2_na": lens_2_na(data),
         "maximum_pinhole_diameter": pinhole_diam[0],

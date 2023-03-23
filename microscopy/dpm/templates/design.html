@@ -82,6 +82,12 @@
             <td>{{ data["lens_2.clear_aperture"] }}</td>
             <td>{{ data["lens_2.clear_aperture.units"] }}</td>
         </tr>
+        <tr>
+            <td>Pinhole</td>
+            <td>Diameter</td>
+            <td>{{ data["pinhole.diameter"] }}</td>
+            <td>{{ data["pinhole.diameter.units"] }}</td>
+        </tr>
     </table>
 
     <h2>Calculated Properties</h2>
@@ -114,6 +120,11 @@
         <tr>
             <td>Actual NA of Fourier lens 1</td>
             <td>{{ results["lens_1_na"] }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Minimum NA of Fourier lens 2</td>
+            <td>{{ results["minimum_lens_2_na"] }}</td>
             <td></td>
         </tr>
         <tr>
