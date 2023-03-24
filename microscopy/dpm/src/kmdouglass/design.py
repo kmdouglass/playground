@@ -42,6 +42,14 @@ def resolution(inputs: dict[str, Any]) -> tuple[float, Units]:
     )
 
 
+def minimum_resolution(inputs: dict[str, Any]) -> tuple[float, Units]:
+    """Computes the minimum radius of the Airy disk in the object space for a given grating and objective magnification."""
+
+    gr_period = inputs["grating.period"] * inputs["grating.period.units"].value
+
+    return gr_period / Units.um.value / 0.28 / inputs["objective.magnification"], Units.um
+
+
 def maximum_grating_period(inputs: dict[str, Any]) -> tuple[float, Units]:
     """Computes the maximum period of the grating to ensure correct PSF sampling."""
 
@@ -181,6 +189,7 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
 
 
     res = resolution(inputs)
+    min_res = minimum_resolution(inputs)
     gr = maximum_grating_period(inputs)
     camera_diag = camera_diagonal(inputs)
     pinhole_diam = maximum_pinhole_diameter(inputs)
@@ -188,6 +197,8 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
     return {
         "resolution": res[0],
         "resolution.units": res[1],
+        "minimum_resolution": min_res[0],
+        "minimum_resolution.units": min_res[1],
         "camera_diagonal": camera_diag[0],
         "camera_diagonal.units": camera_diag[1],
         "maximum_grating_period": gr[0],

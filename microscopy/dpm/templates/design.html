@@ -156,5 +156,20 @@
         {% endfor %}
     </ul>
 
+    <h2>Sampling Requirements</h2>
+    <p>The following table provides results on the minimum resolution and maximum pixel size given the grating period, objective magnification, and 4f magnification.</p>
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+            <th>Units</th>
+        </tr>
+        <tr>
+            <td>Minimum resolution</td>
+            <td>{{ results["minimum_resolution"] }}</td>
+            <td>{{ results["minimum_resolution.units"] }}</td>
+        </tr>
+    </table>
+
 </body>
 </html>
