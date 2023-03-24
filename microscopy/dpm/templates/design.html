@@ -19,74 +19,74 @@
         <tr>
             <td>Objective</td>
             <td>Magnification</td>
-            <td>{{ data["objective.magnification"] }}</td>
+            <td>{{ inputs["objective.magnification"] }}</td>
             <td></td>
         </tr>
         <tr>
             <td>Objective</td>
             <td>Numerical Aperture</td>
-            <td>{{ data["objective.numerical_aperture"] }}</td>
+            <td>{{ inputs["objective.numerical_aperture"] }}</td>
             <td></td>
         </tr>
         <tr>
             <td>Camera</td>
             <td>Pixel size</td>
-            <td>{{ data["camera.pixel_size"] }}</td>
-            <td>{{ data["camera.pixel_size.units"] }}</td>
+            <td>{{ inputs["camera.pixel_size"] }}</td>
+            <td>{{ inputs["camera.pixel_size.units"] }}</td>
         </tr>
         <tr>
             <td>Camera</td>
             <td>Number of pixels (horizontal)</td>
-            <td>{{ data["camera.horizontal_number_of_pixels"] }}</td>
+            <td>{{ inputs["camera.horizontal_number_of_pixels"] }}</td>
             <td></td>
         </tr>
         <tr>
             <td>Camera</td>
             <td>Number of pixels (vertical)</td>
-            <td>{{ data["camera.vertical_number_of_pixels"] }}</td>
+            <td>{{ inputs["camera.vertical_number_of_pixels"] }}</td>
             <td></td>
         </tr>
         <tr>
             <td>Light source</td>
             <td>Wavelength</td>
-            <td>{{ data["light_source.wavelength"] }}</td>
-            <td>{{ data["light_source.wavelength.units"] }}</td>
+            <td>{{ inputs["light_source.wavelength"] }}</td>
+            <td>{{ inputs["light_source.wavelength.units"] }}</td>
         </tr>
         <tr>
             <td>Grating</td>
             <td>Period</td>
-            <td>{{ data["grating.period"] }}</td>
-            <td>{{ data["grating.period.units"] }}</td>
+            <td>{{ inputs["grating.period"] }}</td>
+            <td>{{ inputs["grating.period.units"] }}</td>
         </tr>
         <tr>
             <td>Fourier lens 1</td>
             <td>Focal length</td>
-            <td>{{ data["lens_1.focal_length"] }}</td>
-            <td>{{ data["lens_1.focal_length.units"] }}</td>
+            <td>{{ inputs["lens_1.focal_length"] }}</td>
+            <td>{{ inputs["lens_1.focal_length.units"] }}</td>
         </tr>
         <tr>
             <td>Fourier lens 1</td>
             <td>Clear aperture</td>
-            <td>{{ data["lens_1.clear_aperture"] }}</td>
-            <td>{{ data["lens_1.clear_aperture.units"] }}</td>
+            <td>{{ inputs["lens_1.clear_aperture"] }}</td>
+            <td>{{ inputs["lens_1.clear_aperture.units"] }}</td>
         </tr>
         <tr>
             <td>Fourier lens 2</td>
             <td>Focal length</td>
-            <td>{{ data["lens_2.focal_length"] }}</td>
-            <td>{{ data["lens_2.focal_length.units"] }}</td>
+            <td>{{ inputs["lens_2.focal_length"] }}</td>
+            <td>{{ inputs["lens_2.focal_length.units"] }}</td>
         </tr>
         <tr>
             <td>Fourier lens 2</td>
             <td>Clear aperture</td>
-            <td>{{ data["lens_2.clear_aperture"] }}</td>
-            <td>{{ data["lens_2.clear_aperture.units"] }}</td>
+            <td>{{ inputs["lens_2.clear_aperture"] }}</td>
+            <td>{{ inputs["lens_2.clear_aperture.units"] }}</td>
         </tr>
         <tr>
             <td>Pinhole</td>
             <td>Diameter</td>
-            <td>{{ data["pinhole.diameter"] }}</td>
-            <td>{{ data["pinhole.diameter.units"] }}</td>
+            <td>{{ inputs["pinhole.diameter"] }}</td>
+            <td>{{ inputs["pinhole.diameter.units"] }}</td>
         </tr>
     </table>
 
@@ -138,6 +138,13 @@
             <td>{{ results["maximum_pinhole_diameter.units"] }}</td>
         </tr>
     </table>
+
+    <h2>Design Violations</h2>
+    <ul>
+        {% for violation in violations %}
+        <li>{{violation}}</li>
+        {% endfor %}
+    </ul>
 
 </body>
 </html>
