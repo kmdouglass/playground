@@ -196,6 +196,8 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
         "minimum_lens_2_na": minimum_lens_2_na(inputs),
         "lens_1_na": lens_1_na(inputs),
         "lens_2_na": lens_2_na(inputs),
+        "minimum_4f_magnification": minimum_4f_magnification(inputs),
+        "4f_magnification": actual_4f_magnification(inputs),
         "maximum_pinhole_diameter": pinhole_diam[0],
         "maximum_pinhole_diameter.units": pinhole_diam[1],
     }
