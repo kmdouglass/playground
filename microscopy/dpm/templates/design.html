@@ -108,9 +108,24 @@
             <td>{{ results["camera_diagonal.units"] }}</td>
         </tr>
         <tr>
+            <td>Field of view (horizontal; object space)</td>
+            <td>{{ results["field_of_view_horizontal"] }}</td>
+            <td>{{ results["field_of_view_horizontal.units"] }}</td>
+        </tr>
+        <tr>
+            <td>Field of view (vertical; object space)</td>
+            <td>{{ results["field_of_view_vertical"] }}</td>
+            <td>{{ results["field_of_view_vertical.units"] }}</td>
+        </tr>
+        <tr>
             <td>Maximum grating period</td>
             <td>{{ results["maximum_grating_period"] }}</td>
             <td>{{ results["maximum_grating_period.units"] }}</td>
+        </tr>
+        <tr>
+            <td>Fourier plane spacing</td>
+            <td>{{ results["fourier_plane_spacing"] }}</td>
+            <td>{{ results["fourier_plane_spacing.units"] }}</td>
         </tr>
         <tr>
             <td>Minimum NA of Fourier lens 1</td>
@@ -146,6 +161,11 @@
             <td>Maximum pinhole diameter</td>
             <td>{{ results["maximum_pinhole_diameter"] }}</td>
             <td>{{ results["maximum_pinhole_diameter.units"] }}</td>
+        </tr>
+        <tr>
+            <td>Coupling ratio</td>
+            <td>{{ results["coupling_ratio"] }}</td>
+            <td></td>
         </tr>
     </table>
 

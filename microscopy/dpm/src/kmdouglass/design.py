@@ -58,6 +58,20 @@ def maximum_grating_period(inputs: dict[str, Any]) -> tuple[float, Units]:
     return period, inputs["light_source.wavelength.units"]
 
 
+def first_order_diffraction_position(inputs: dict[str, Any]) -> tuple[float, Units]:
+    """The position of the first diffraction order in the Fourier plane with respect to the optics axis.
+
+    This assumes that the tangent of the diffracted angle is approximately equal to the angle itself.
+
+    """
+
+    f1 = inputs["lens_1.focal_length"] * inputs["lens_1.focal_length.units"].value
+    wav = inputs["light_source.wavelength"] * inputs["light_source.wavelength.units"].value
+    gr_period = inputs["grating.period"] * inputs["grating.period.units"].value
+
+    return f1 * wav / gr_period / Units.mm.value, Units.mm
+
+
 def minimum_4f_magnification(inputs: dict[str, Any]) -> float:
     """Computes the minimum magnification of the 4f system for sufficient PSF/fringe sampling."""
 
@@ -184,6 +198,30 @@ def maximum_pinhole_diameter(inputs: dict[str, Any]) -> tuple[float, Units]:
     return 2.44 * wav * f2 / d / inputs["misc.central_lobe_size_factor"] / Units.um.value, Units.um
 
 
+def coupling_ratio(inputs: dict[str, Any]) -> float:
+    """Computes the ratio of the unscattered and scattered light beam radii in the Fourier plane.
+
+    Notes
+    -----
+
+    > A ratio of 1 means that the diffraction spot is the same size as the FOV and only the DC
+    > signal can be obtained. As the ratio approaches zero, more and more detail can be observed
+    > within the image for a given FOV. [1]_
+
+    .. [1] Bhaduri, et al., "Diffraction phase microscopy: principles and applications in materials
+    and life sciences," Advances in Optics and Photonics 6, 57 (2014)
+
+    """
+    res = resolution(inputs)
+    fov_h = field_of_view_horizontal(inputs)
+    fov_v = field_of_view_vertical(inputs)
+
+    res_norm = res[0] * res[1].value
+    fov_diag = ((fov_h[0] * fov_h[1].value)**2 + (fov_v[0] * fov_v[1].value)**2)**(0.5)
+
+    return res_norm / fov_diag
+
+
 def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
     """Performs all design computations."""
 
@@ -192,7 +230,10 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
     min_res = minimum_resolution(inputs)
     gr = maximum_grating_period(inputs)
     camera_diag = camera_diagonal(inputs)
+    delta_x = first_order_diffraction_position(inputs)
     pinhole_diam = maximum_pinhole_diameter(inputs)
+    fov_h = field_of_view_horizontal(inputs)
+    fov_v = field_of_view_vertical(inputs)
 
     return {
         "resolution": res[0],
@@ -201,8 +242,14 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
         "minimum_resolution.units": min_res[1],
         "camera_diagonal": camera_diag[0],
         "camera_diagonal.units": camera_diag[1],
+        "field_of_view_horizontal": fov_h[0],
+        "field_of_view_horizontal.units": fov_h[1],
+        "field_of_view_vertical": fov_v[0],
+        "field_of_view_vertical.units": fov_v[1],
         "maximum_grating_period": gr[0],
         "maximum_grating_period.units": gr[1],
+        "fourier_plane_spacing": delta_x[0],
+        "fourier_plane_spacing.units": delta_x[1],
         "minimum_lens_1_na": minimum_lens_1_na(inputs),
         "minimum_lens_2_na": minimum_lens_2_na(inputs),
         "lens_1_na": lens_1_na(inputs),
@@ -211,6 +258,7 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
         "4f_magnification": actual_4f_magnification(inputs),
         "maximum_pinhole_diameter": pinhole_diam[0],
         "maximum_pinhole_diameter.units": pinhole_diam[1],
+        "coupling_ratio": coupling_ratio(inputs),
     }
 
 
