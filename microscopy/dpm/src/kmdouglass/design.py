@@ -58,6 +58,15 @@ def maximum_grating_period(inputs: dict[str, Any]) -> tuple[float, Units]:
     return period, inputs["light_source.wavelength.units"]
 
 
+def maximum_pixel_size(inputs: dict[str, Any]) -> tuple[float, Units]:
+    """Computes the maximum pixel size that satisfies the sampling requirements given a grating period."""
+
+    gr_period = inputs["grating.period"] * inputs["grating.period.units"].value
+    mag_4f = actual_4f_magnification(inputs)
+
+    return gr_period * abs(mag_4f) / 2.67 / Units.um.value, Units.um
+
+
 def first_order_diffraction_position(inputs: dict[str, Any]) -> tuple[float, Units]:
     """The position of the first diffraction order in the Fourier plane with respect to the optics axis.
 
@@ -234,6 +243,7 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
     pinhole_diam = maximum_pinhole_diameter(inputs)
     fov_h = field_of_view_horizontal(inputs)
     fov_v = field_of_view_vertical(inputs)
+    px_max_size = maximum_pixel_size(inputs)
 
     return {
         "resolution": res[0],
@@ -242,6 +252,8 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
         "minimum_resolution.units": min_res[1],
         "camera_diagonal": camera_diag[0],
         "camera_diagonal.units": camera_diag[1],
+        "maximum_pixel_size": px_max_size[0],
+        "maximum_pixel_size.units": px_max_size[1],
         "field_of_view_horizontal": fov_h[0],
         "field_of_view_horizontal.units": fov_h[1],
         "field_of_view_vertical": fov_v[0],
