@@ -100,77 +100,14 @@
             <th>Value</th>
             <th>Units</th>
         </tr>
+        {% for result in results.values() %}
         <tr>
-            <td>{{ results.resolution.equation }}</td>
-            <td>{{ results.resolution.name }}</td>
-            <td>{{ results.resolution.value }}</td>
-            <td>{{ results.resolution.units }}</td>
+            <td>{{ result.equation }}</td>
+            <td>{{ result.name }}</td>
+            <td>{{ result.value }}</td>
+            <td>{{ result.units }}</td>
         </tr>
-        <tr>
-            <td>Camera diagonal size</td>
-            <td>{{ results["camera_diagonal"] }}</td>
-            <td>{{ results["camera_diagonal.units"] }}</td>
-        </tr>
-        <tr>
-            <td>Field of view (horizontal; object space)</td>
-            <td>{{ results["field_of_view_horizontal"] }}</td>
-            <td>{{ results["field_of_view_horizontal.units"] }}</td>
-        </tr>
-        <tr>
-            <td>Field of view (vertical; object space)</td>
-            <td>{{ results["field_of_view_vertical"] }}</td>
-            <td>{{ results["field_of_view_vertical.units"] }}</td>
-        </tr>
-        <tr>
-            <td>Maximum grating period</td>
-            <td>{{ results["maximum_grating_period"] }}</td>
-            <td>{{ results["maximum_grating_period.units"] }}</td>
-        </tr>
-        <tr>
-            <td>Fourier plane spacing</td>
-            <td>{{ results["fourier_plane_spacing"] }}</td>
-            <td>{{ results["fourier_plane_spacing.units"] }}</td>
-        </tr>
-        <tr>
-            <td>Minimum NA of Fourier lens 1</td>
-            <td>{{ results["minimum_lens_1_na"] }}</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>Actual NA of Fourier lens 1</td>
-            <td>{{ results["lens_1_na"] }}</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>Minimum NA of Fourier lens 2</td>
-            <td>{{ results["minimum_lens_2_na"] }}</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>Actual NA of Fourier lens 2</td>
-            <td>{{ results["lens_2_na"] }}</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>Minimum 4f magnification (absolute value)</td>
-            <td>{{ results["minimum_4f_magnification"] }}</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>Actual 4f magnification</td>
-            <td>{{ results["4f_magnification"] }}</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>Maximum pinhole diameter</td>
-            <td>{{ results["maximum_pinhole_diameter"] }}</td>
-            <td>{{ results["maximum_pinhole_diameter.units"] }}</td>
-        </tr>
-        <tr>
-            <td>Coupling ratio</td>
-            <td>{{ results["coupling_ratio"] }}</td>
-            <td></td>
-        </tr>
+        {% endfor %}
     </table>
 
     <h2>Design Violations</h2>
@@ -184,19 +121,22 @@
     <p>The following table provides results on the minimum resolution and maximum pixel size given the grating period, objective magnification, and 4f magnification.</p>
     <table>
         <tr>
+            <th>Equation</th>
             <th>Property</th>
             <th>Value</th>
             <th>Units</th>
         </tr>
         <tr>
-            <td>Minimum resolution</td>
-            <td>{{ results["minimum_resolution"] }}</td>
-            <td>{{ results["minimum_resolution.units"] }}</td>
+            <td>{{ results.minimum_resolution.equation }}</td>
+            <td>{{ results.minimum_resolution.name }}</td>
+            <td>{{ results.minimum_resolution.value }}</td>
+            <td>{{ results.minimum_resolution.units }}</td>
         </tr>
         <tr>
-            <td>Maximum pixel size</td>
-            <td>{{ results["maximum_pixel_size"] }}</td>
-            <td>{{ results["maximum_pixel_size.units"] }}</td>
+            <td>{{ results.maximum_pixel_size.equation }}</td>
+            <td>{{ results.maximum_pixel_size.name }}</td>
+            <td>{{ results.maximum_pixel_size.value }}</td>
+            <td>{{ results.maximum_pixel_size.units }}</td>
         </tr>
     </table>
 
