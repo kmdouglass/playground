@@ -3,6 +3,8 @@
 <html>
 <head>
     <title>Design of a Diffraction Phase Microscope</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
 
@@ -93,14 +95,16 @@
     <h2>Calculated Properties</h2>
     <table>
         <tr>
+            <th>Equation</th>
             <th>Property</th>
             <th>Value</th>
             <th>Units</th>
         </tr>
         <tr>
-            <td>Resolution</td>
-            <td>{{ results["resolution"] }}</td>
-            <td>{{ results["resolution.units"] }}</td>
+            <td>{{ results.resolution.equation }}</td>
+            <td>{{ results.resolution.name }}</td>
+            <td>{{ results.resolution.value }}</td>
+            <td>{{ results.resolution.units }}</td>
         </tr>
         <tr>
             <td>Camera diagonal size</td>

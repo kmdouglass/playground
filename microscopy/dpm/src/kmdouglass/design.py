@@ -1,11 +1,17 @@
 from enum import Enum
-from typing import Any
+from typing import Any, Optional, TypedDict
 
 
 class Units(Enum):
     mm = 1e-3
     um = 1e-6
-    nm = 1e-9
+
+
+class Result(TypedDict):
+    value: float
+    units: Optional[Units]
+    name: str
+    equation: str
 
 
 inputs = {
@@ -33,13 +39,18 @@ inputs = {
 }
 
 
-def resolution(inputs: dict[str, Any]) -> tuple[float, Units]:
+def resolution(inputs: dict[str, Any]) -> Result:
     """Computes the radius of the Airy disk in the object space."""
 
-    return (
-        1.22 * inputs["light_source.wavelength"] / inputs["objective.numerical_aperture"],
-        inputs["light_source.wavelength.units"],
-    )
+    units = Units.um
+    value = 1.22 * inputs["light_source.wavelength"] * inputs["light_source.wavelength.units"].value / inputs["objective.numerical_aperture"] / units.value
+
+    return {
+        "value": value,
+        "units": units,
+        "name": "Resolution",
+        "equation": r"\( \Delta \rho = 1.22 \lambda / \text{NA} \)"
+    }
 
 
 def minimum_resolution(inputs: dict[str, Any]) -> tuple[float, Units]:
@@ -225,7 +236,7 @@ def coupling_ratio(inputs: dict[str, Any]) -> float:
     fov_h = field_of_view_horizontal(inputs)
     fov_v = field_of_view_vertical(inputs)
 
-    res_norm = res[0] * res[1].value
+    res_norm = res["value"] * res["units"].value
     fov_diag = ((fov_h[0] * fov_h[1].value)**2 + (fov_v[0] * fov_v[1].value)**2)**(0.5)
 
     return res_norm / fov_diag
@@ -234,8 +245,6 @@ def coupling_ratio(inputs: dict[str, Any]) -> float:
 def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
     """Performs all design computations."""
 
-
-    res = resolution(inputs)
     min_res = minimum_resolution(inputs)
     gr = maximum_grating_period(inputs)
     camera_diag = camera_diagonal(inputs)
@@ -246,8 +255,7 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
     px_max_size = maximum_pixel_size(inputs)
 
     return {
-        "resolution": res[0],
-        "resolution.units": res[1],
+        "resolution": resolution(inputs),
         "minimum_resolution": min_res[0],
         "minimum_resolution.units": min_res[1],
         "camera_diagonal": camera_diag[0],
