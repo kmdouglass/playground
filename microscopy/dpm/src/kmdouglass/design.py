@@ -375,7 +375,27 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def validate_lens_2_na(_, results: dict[str, Any]) -> str:
+def validate_4f_magnification(inputs: dict[str, Any], results: dict[str, Result]) -> Optional[str]:
+    """Validates that the magnification of the 4f system is greater than the minimum requirement."""
+
+    mag_4f = abs(actual_4f_magnification(inputs)["value"])
+    min_mag_4f = abs(minimum_4f_magnification(inputs)["value"])
+
+    if mag_4f < min_mag_4f:
+        return f"Absolute value of 4f magnification is less than the minimum requirement: Minimum: {min_mag_4f}, Actual: {mag_4f}"
+
+
+def validate_lens_1_na(_, results: dict[str, Result]) -> Optional[str]:
+    """Validates that the NA of lens 1 exceeds the minimum requirement."""
+    
+    lens_1_na = results["lens_1_na"]["value"]
+    min_lens_1_na = results["minimum_lens_1_na"]["value"]
+
+    if lens_1_na < min_lens_1_na:
+        return f"NA of lens 1 is less than the minimum requirement: Minimum: {min_lens_1_na}, Actual: {lens_1_na}"
+
+
+def validate_lens_2_na(_, results: dict[str, Result]) -> Optional[str]:
     """Validates that the NA of lens 2 exceeds the minimum requirement."""
     
     lens_2_na = results["lens_2_na"]["value"]
@@ -384,16 +404,33 @@ def validate_lens_2_na(_, results: dict[str, Any]) -> str:
     if lens_2_na < min_lens_2_na:
         return f"NA of lens 2 is less than the minimum requirement: Minimum: {min_lens_2_na}, Actual: {lens_2_na}"
     
-    return ""
+
+def validate_pinhole_diameter(inputs: dict[str, Any], results: dict[str, Result]) -> Optional[str]:
+    """Validates that the pinhole diameter is less than the maximum requirement."""
+
+    units = Units.um
+    ph_diam = inputs["pinhole.diameter"] * inputs["pinhole.diameter.units"].value / units.value
+    max_ph_diam = results["maximum_pinhole_diameter"]["value"] * results["maximum_pinhole_diameter"]["units"].value / units.value
+
+    if ph_diam > max_ph_diam:
+        return f"Pinhole diameter exceeds the maximum requirement: Maximum {max_ph_diam}, Actual: {ph_diam}"
 
 
-def validate_results(inputs: dict[str, Any], results: dict[str, Any]) -> list[str]:
+def validate_results(inputs: dict[str, Any], results: dict[str, Result]) -> list[str]:
     """Validates whether the design criteria are satisfied."""
 
-    violations = []
-    violations.append(validate_lens_2_na(inputs, results))
+    validations = [
+        validate_4f_magnification,
+        validate_lens_1_na,
+        validate_lens_2_na,
+        validate_pinhole_diameter,
+    ]
 
-    return violations
+    violations = []
+    for validation in validations:
+        violations.append(validation(inputs, results))
+
+    return [v for v in violations if v is not None]
 
 
 if __name__ == "__main__":
