@@ -117,6 +117,9 @@
         {% endfor %}
     </ul>
 
+    <h2>Fourier Plane Profile</h2>
+    <img src="data:image/png;base64,{{ plots.lens_1_fourier_plane | safe }}">
+
     <h2>Sampling Requirements</h2>
     <p>The following table provides results on the minimum resolution and maximum pixel size given the grating period, objective magnification, and 4f magnification.</p>
     <table>

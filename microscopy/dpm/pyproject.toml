@@ -11,6 +11,7 @@ packages = [
 
 [tool.poetry.dependencies]
 Jinja2 = "*"
+matplotlib = "*"
 python = "^3.8"
 
 [build-system]

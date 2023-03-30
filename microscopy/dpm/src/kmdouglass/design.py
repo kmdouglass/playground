@@ -1,5 +1,9 @@
+import base64
 from enum import Enum
+import io
 from typing import Any, Optional, TypedDict
+
+import matplotlib.pyplot as plt
 
 
 class Units(Enum):
@@ -448,7 +452,40 @@ def validate_results(inputs: dict[str, Any], results: dict[str, Result]) -> list
     return [v for v in violations if v is not None]
 
 
-if __name__ == "__main__":
+def plot_fourier_plane(inputs: dict[str, Any], results: dict[str, Result]) -> str:
+    """Create a plot of the areas of the Fourier plane after the first Fourier lens."""
+    units = Units.mm
+    na_img_space = inputs["objective.numerical_aperture"] / inputs["objective.magnification"]  # image space NA of objective
+    f1 = inputs["lens_1.focal_length"] * inputs["lens_1.focal_length.units"].value
+    radius = na_img_space * f1 / units.value
+
+    spacing_tmp = fourier_plane_spacing(inputs)
+    spacing = spacing_tmp["value"] * spacing_tmp["units"].value / units.value
+    
+    zero_order = plt.Circle((0, 0), radius, label="0")
+    first_order = plt.Circle((spacing, 0), radius, label="+1")
+
+    _, ax = plt.subplots() 
+    ax.add_patch(zero_order)
+    ax.add_patch(first_order)
+    ax.set_xlim((-spacing - radius, spacing + radius))
+    ax.set_ylim((-spacing - radius, spacing + radius))
+    ax.spines[['right', 'top']].set_visible(False)
+    ax.set_title("Diffracted Orders in the Fourier Plane")
+    ax.set_xlabel("x (mm)")
+    ax.set_ylabel("y (mm)")
+    ax.legend()
+
+    # Encode image as base64 string for embedding in HTML
+    byte_string = io.BytesIO()
+    plt.savefig(byte_string, format='png')
+    byte_string.seek(0)
+    img_base64 = base64.b64encode(byte_string.read()).decode()
+
+    return img_base64
+
+
+def main():
     from jinja2 import Environment, FileSystemLoader
 
     environment = Environment(loader=FileSystemLoader("templates/"))
@@ -456,8 +493,13 @@ if __name__ == "__main__":
 
     results = compute_results(inputs)
     violations = validate_results(inputs, results)
+    plots = {"lens_1_fourier_plane": plot_fourier_plane(inputs, results)}
 
-    content = template.render(inputs=inputs, results=results, violations=violations)
+    content = template.render(inputs=inputs, results=results, violations=violations, plots=plots)
 
     with open("output.html", mode="w", encoding="utf-8") as file:
         file.write(content)
+
+
+if __name__ == "__main__":
+    main()
