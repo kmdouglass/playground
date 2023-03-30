@@ -6,6 +6,9 @@ class Units(Enum):
     mm = 1e-3
     um = 1e-6
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class Result(TypedDict):
     value: float
