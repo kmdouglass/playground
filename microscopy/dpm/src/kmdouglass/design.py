@@ -413,7 +413,18 @@ def validate_pinhole_diameter(inputs: dict[str, Any], results: dict[str, Result]
     max_ph_diam = results["maximum_pinhole_diameter"]["value"] * results["maximum_pinhole_diameter"]["units"].value / units.value
 
     if ph_diam > max_ph_diam:
-        return f"Pinhole diameter exceeds the maximum requirement: Maximum {max_ph_diam}, Actual: {ph_diam}"
+        return f"Pinhole diameter exceeds the maximum requirement: Maximum {max_ph_diam} {units}, Actual: {ph_diam} {units}"
+    
+
+def validate_pixel_size(inputs: dict[str, Any], results: dict[str, Result]) -> Optional[str]:
+    """Validates the pixel size is less than the maximum requirement."""
+
+    units = Units.um
+    px = inputs["camera.pixel_size"] * inputs["camera.pixel_size.units"].value / units.value
+    max_px = results["maximum_pixel_size"]["value"] * results["maximum_pixel_size"]["units"].value / units.value
+
+    if px > max_px:
+        return f"Pixel size exceeds the maximum requirement: Maximum {max_px} {units}, Actual: {px} {units}"
 
 
 def validate_results(inputs: dict[str, Any], results: dict[str, Result]) -> list[str]:
@@ -424,6 +435,7 @@ def validate_results(inputs: dict[str, Any], results: dict[str, Result]) -> list
         validate_lens_1_na,
         validate_lens_2_na,
         validate_pinhole_diameter,
+        validate_pixel_size,
     ]
 
     violations = []
