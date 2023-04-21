@@ -118,6 +118,29 @@
     </ul>
 
     <h2>Fourier Plane Profile</h2>
+    <p>The following plot shows the sizes of the features in the Fourier plane of the diffraction phase microscope, i.e. the image in the back focal plane of lens 1.</p>
+
+    <table>
+        <tr>
+            <th>Equation</th>
+            <th>Property</th>
+            <th>Value</th>
+            <th>Units</th>
+        </tr>
+        <tr>
+            <td>{{ results.fourier_plane_spacing.equation }}</td>
+            <td>{{ results.fourier_plane_spacing.name }}</td>
+            <td>{{ results.fourier_plane_spacing.value }}</td>
+            <td>{{ results.fourier_plane_spacing.units }}</td>
+        </tr>
+        <tr>
+            <td>{{ results.fourier_plane_sizes.equation }}</td>
+            <td>{{ results.fourier_plane_sizes.name }}</td>
+            <td>{{ results.fourier_plane_sizes.value }}</td>
+            <td>{{ results.fourier_plane_sizes.units }}</td>
+        </tr>
+    </table>
+
     <img src="data:image/png;base64,{{ plots.lens_1_fourier_plane | safe }}">
 
     <h2>Sampling Requirements</h2>

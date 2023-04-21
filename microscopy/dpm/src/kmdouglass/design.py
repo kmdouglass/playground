@@ -128,6 +128,26 @@ def fourier_plane_spacing(inputs: dict[str, Any]) -> Result:
     }
 
 
+def fourier_plane_sizes(inputs: dict[str, Any]) -> Result:
+    """Computes the radial extent of the image spectra in the Fourier plane.
+    
+    This ignores the broadening effects of aberrations such as coma, which can be obvious in the
+    non-zero orders. It also assumes that the Abbe sine condition is satisfied.
+
+    """
+    units = Units.mm
+    na_img_space = inputs["objective.numerical_aperture"] / inputs["objective.magnification"]  # image space NA of objective
+    f1 = inputs["lens_1.focal_length"] * inputs["lens_1.focal_length.units"].value
+    radius = na_img_space * f1 / units.value
+
+    return {
+        "value": radius,
+        "units": units,
+        "name": "Radial extent of image spectra",
+        "equation": r"\( r = \text{NA}_{obj}' f_1 \)",
+    }
+
+
 def minimum_4f_magnification(inputs: dict[str, Any]) -> Result:
     """Computes the minimum magnification of the 4f system for sufficient PSF/fringe sampling."""
 
@@ -370,6 +390,7 @@ def compute_results(inputs: dict[str, Any]) -> dict[str, Any]:
         "field_of_view_vertical": field_of_view_vertical(inputs),
         "maximum_grating_period": maximum_grating_period(inputs),
         "fourier_plane_spacing": fourier_plane_spacing(inputs),
+        "fourier_plane_sizes": fourier_plane_sizes(inputs),
         "minimum_lens_1_na": minimum_lens_1_na(inputs),
         "minimum_lens_2_na": minimum_lens_2_na(inputs),
         "lens_1_na": lens_1_na(inputs),
@@ -454,10 +475,8 @@ def validate_results(inputs: dict[str, Any], results: dict[str, Result]) -> list
 
 def plot_fourier_plane(inputs: dict[str, Any], results: dict[str, Result]) -> str:
     """Create a plot of the areas of the Fourier plane after the first Fourier lens."""
-    units = Units.mm
-    na_img_space = inputs["objective.numerical_aperture"] / inputs["objective.magnification"]  # image space NA of objective
-    f1 = inputs["lens_1.focal_length"] * inputs["lens_1.focal_length.units"].value
-    radius = na_img_space * f1 / units.value
+    radius = results["fourier_plane_sizes"]["value"]
+    units = results["fourier_plane_sizes"]["units"]
 
     spacing_tmp = fourier_plane_spacing(inputs)
     spacing = spacing_tmp["value"] * spacing_tmp["units"].value / units.value
