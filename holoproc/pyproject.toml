@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "holoproc"
+version = "0.1.0"
+description = "Imaging processing for digital holography."
+authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "holoproc", from = "src" }
+]
+
+[tool.poetry.scripts]
+holoproc = "holoproc.main:main"
+
+[tool.poetry.dependencies]
+imagecodecs = "*"
+matplotlib = "*"
+numpy = "*"
+python = "^3.8"
+scikit-image = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
