@@ -70,11 +70,13 @@ def newton_raphson(
 
     for _ in range(max_iterations):
         s = s - (dir_cosines[2] * s - surface.sag(curr_pos[0], curr_pos[1])) / np.dot(surface.normal(curr_pos[0], curr_pos[1]), dir_cosines)
+
+        # Convert from s back to x, y, and z
         curr_pos = np.array([curr_pos[0] + s * dir_cosines[0], curr_pos[1] + s * dir_cosines[1], s * dir_cosines[2]], dtype=Float)
         if np.abs(s - s_1) < tol:
             break
         s_1 = s.copy()
-    return curr_pos
+    return curr_pos  # TODO: Return the surface normal at the intersection point as well
 
 
 def main():
