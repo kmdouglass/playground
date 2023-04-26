@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "newton-raphson"
+version = "0.1.0"
+description = "Newton-Raphson prototype for ray tracers"
+authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "nr", from = "src" }
+]
+
+[tool.poetry.scripts]
+nr = "nr.main:main"
+
+[tool.poetry.dependencies]
+matplotlib = "*"
+numpy = "*"
+python = "^3.8"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
