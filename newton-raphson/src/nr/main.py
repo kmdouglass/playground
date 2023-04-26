@@ -55,28 +55,37 @@ def newton_raphson(
     s_1: float = 0.0,
     tol=DEFAULT_TOL,
     max_iterations=MAX_ITERATIONS
-) -> npt.NDArray[Float]:
+) -> tuple[npt.NDArray[Float], npt.NDArray[Float]]:
     """Find ray-surface intersection points using the Newton-Raphson method.
     
-    This function takes a set of initial ray points and directions, a surface, initial guess for the
-    intersection points. It returns the intersection points.
+    This function takes an initial ray position and direction, a surface, and an initial guess for
+    the distance along the ray to the intersection point. It returns the intersection point and the
+    surface normal at that point.
     
     """
     s_1 = Float(s_1)
 
-    # Parameterize the ray by distance s and find the intersection point with the z=0 plane
+    # Find the distance along the ray to the z=0 plane; use this as the initial value for s
     s = -pos[2] / dir_cosines[2]
-    curr_pos = np.array([pos[0] + s * dir_cosines[0], pos[1] + s * dir_cosines[1], 0], dtype=Float)
 
     for _ in range(max_iterations):
-        s = s - (dir_cosines[2] * s - surface.sag(curr_pos[0], curr_pos[1])) / np.dot(surface.normal(curr_pos[0], curr_pos[1]), dir_cosines)
+        # Compute the current estimate of the intersection point from the distance s
+        x = pos[0] + s * dir_cosines[0]
+        y = pos[1] + s * dir_cosines[1]
+        z = pos[2] + s * dir_cosines[2]
 
-        # Convert from s back to x, y, and z
-        curr_pos = np.array([curr_pos[0] + s * dir_cosines[0], curr_pos[1] + s * dir_cosines[1], s * dir_cosines[2]], dtype=Float)
+        # Update the distance s using the Newton-Raphson method
+        s = s - (z - surface.sag(x, y)) / np.dot(surface.normal(x, y), dir_cosines)
+
+        # Check for convergence by comparing the current and previous values of s
         if np.abs(s - s_1) < tol:
             break
         s_1 = s.copy()
-    return curr_pos  # TODO: Return the surface normal at the intersection point as well
+    
+    # Compute the final the intersection point from the distance s and the surface normal
+    x, y, z = pos[0] + s * dir_cosines[0], pos[1] + s * dir_cosines[1], pos[2] + s * dir_cosines[2]
+    
+    return (np.array([x, y, z], dtype=Float), surface.normal(x, y))
 
 
 def main():
@@ -87,5 +96,5 @@ def main():
     print(f"Starting point: {pos}")
     print(f"Direction cosines: {dir_cosines}")
 
-    r = newton_raphson(pos, dir_cosines, surface, s_1=-1.0)
-    print(f"Intersection point: {r}")
+    r, n = newton_raphson(pos, dir_cosines, surface, s_1=-1.0)
+    print(f"Intersection point: {r}, surface normal: {n}")
