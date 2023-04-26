@@ -84,5 +84,8 @@ def main():
     dir_cosines = np.array([0.0, 0.7071, 0.7071], dtype=Float)  # Ray traveling at 45 degrees to the z axis
     surface = FlatSurface()
 
+    print(f"Starting point: {pos}")
+    print(f"Direction cosines: {dir_cosines}")
+
     r = newton_raphson(pos, dir_cosines, surface, s_1=-1.0)
     print(f"Intersection point: {r}")
