@@ -52,7 +52,10 @@ def main():
     img_filtered = np.fft.ifft2(np.fft.ifftshift(img_fft))
     bg_filtered = np.fft.ifft2(np.fft.ifftshift(bg_fft))
 
-    # Compute phase image
+    # Compute the phase image
+    # This is only valid for thin objects where the phase difference is less than 2 * pi
+    # See Pham, et al., "Fast phase reconstruction in white light diffraction phase microscopy,"
+    # Applied Optics 52, A97 (2013)
     phase = np.angle(img_filtered / bg_filtered)
 
     io.imshow(phase)
