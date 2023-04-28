@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 from numpy.fft import fft2, fftshift
-from skimage import io
+from skimage import io, restoration
 
 
 def mask_fft(img_fft: np.ndarray, radius_px: int = 10) -> np.ndarray:
@@ -18,16 +18,21 @@ def mask_fft(img_fft: np.ndarray, radius_px: int = 10) -> np.ndarray:
     return fft_cp
 
 
+def unwrap(phase: np.ndarray) -> np.ndarray:
+    """Unwrap the phase image using Goldstein's algorithm."""
+    return restoration.unwrap_phase(phase)
+
+
 def main():
-    img_path = Path("/home/kmd/src/playground/holoproc/data/2023-04-25-Beads/polystyrene-15um-air-1-2.tif")
-    bg_path = Path("/home/kmd/src/playground/holoproc/data/2023-04-25-Beads/polystyrene-15um-air-bg-1.tif")
+    img_path = Path("/home/kmd/src/playground/holoproc/data/2023-04-28-PS-Beads/15um-ps-bead-air-bg1-0.tif")
+    bg_path = Path("/home/kmd/src/playground/holoproc/data/2023-04-28-PS-Beads/15um-ps-bead-air-background-0.tif")
 
     img = io.imread(img_path)
     bg = io.imread(bg_path)
 
     # Crop to a region containing a single bead
-    bead_row, bead_col = (420, 660)
-    crop_size = 128  # px; must be a power of 2
+    bead_row, bead_col = (500, 500)
+    crop_size = 512  # px; must be a power of 2
     img = img[(bead_row - crop_size // 2):(bead_row + crop_size // 2), (bead_col - crop_size // 2):(bead_col + crop_size // 2)]
     bg = bg[(bead_row - crop_size // 2):(bead_row + crop_size // 2), (bead_col - crop_size // 2):(bead_col + crop_size // 2)]
 
@@ -56,9 +61,20 @@ def main():
     # This is only valid for thin objects where the phase difference is less than 2 * pi
     # See Pham, et al., "Fast phase reconstruction in white light diffraction phase microscopy,"
     # Applied Optics 52, A97 (2013)
-    phase = np.angle(img_filtered / bg_filtered)
+    # phase = np.angle(img_filtered / bg_filtered)
 
-    io.imshow(phase)
+    # Compute the phase image using the arctangent
+    img_wrapped = np.angle(img_filtered)
+    bg_wrapped = np.angle(bg_filtered) 
+
+    # Unwrap the phase image
+    img_unwrapped = unwrap(img_wrapped)
+    bg_unwrapped = unwrap(bg_wrapped)
+
+    # Subtract the background from the image
+    final = img_unwrapped - bg_unwrapped
+    
+    io.imshow(final)
     io.show()
 
 
