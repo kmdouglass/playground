@@ -7,12 +7,38 @@ from numpy.fft import fft2, fftshift
 from skimage import io, restoration
 
 
+def compute_mask_radius_px(num_px: int, px_size_um: float, wavelength_um: float, mag: float, na: float) -> int:
+    """Compute the radius of the circular mask in pixels.
+
+    Parameters
+    ----------
+    num_px : int
+        Number of pixels in the image (must be square).
+    px_size : float
+        Physical size of a pixel in microns.
+
+    """
+    # Compute the size of a pixel in the sample plane
+    dx = px_size_um / mag
+
+    # Sampling frequency in the sample plane
+    f_S = 1 / dx
+
+    # Sampling frequency in the Fourier plane
+    df = 1 / (num_px * dx)
+
+    # Mask radius in the Fourier plane in pixels
+    # R = NA / wavelength / df
+    radius_px = int(na / wavelength_um / df)
+
+    return radius_px
+
+
 def mask_fft(img_fft: np.ndarray, radius_px: int = 10) -> np.ndarray:
     """Apply a circular mask to a shifted FFT about the origin."""
-    R = 10
     fft_cp = img_fft.copy()
     y, x = np.ogrid[0:fft_cp.shape[0], 0:fft_cp.shape[1]]
-    mask = (x - fft_cp.shape[0] // 2)**2 + (y - fft_cp.shape[1] // 2)**2 <= R**2
+    mask = (x - fft_cp.shape[0] // 2)**2 + (y - fft_cp.shape[1] // 2)**2 <= radius_px**2
     fft_cp[~mask] = 0
 
     return fft_cp
@@ -49,9 +75,14 @@ def main():
     img_fft = np.roll(img_fft, shift=shift_px, axis=1)
     bg_fft = np.roll(bg_fft, shift=shift_px, axis=1)
 
+    # Compute the radius of the circular mask in pixels
+    # The radius is k * NA in angular frequency, or NA / wavelength in spatial frequency
+    radius_px = compute_mask_radius_px(num_px=crop_size, px_size_um=5.2, wavelength_um=0.641, mag=20, na=0.4)
+    print(f"Mask radius: {radius_px} px")
+
     # Apply a circular mask of radius R to the FFTs
-    img_fft = mask_fft(img_fft)
-    bg_fft = mask_fft(bg_fft)
+    img_fft = mask_fft(img_fft, radius_px=radius_px)
+    bg_fft = mask_fft(bg_fft, radius_px=radius_px)
 
     # Inverse FFT to get the modulated component
     img_filtered = np.fft.ifft2(np.fft.ifftshift(img_fft))
