@@ -25,7 +25,7 @@ def compute_mask_radius_px(num_px: int, px_size_um: float, wavelength_um: float,
     f_S = 1 / dx
 
     # Sampling frequency in the Fourier plane
-    df = 1 / (num_px * dx)
+    df = f_S / num_px
 
     # Mask radius in the Fourier plane in pixels
     # R = NA / wavelength / df
@@ -47,6 +47,18 @@ def mask_fft(img_fft: np.ndarray, radius_px: int = 10) -> np.ndarray:
 def unwrap(phase: np.ndarray) -> np.ndarray:
     """Unwrap the phase image using Goldstein's algorithm."""
     return restoration.unwrap_phase(phase)
+
+
+def compute_height_map(phase: np.ndarray, wavelength_um: float, dn: float) -> np.ndarray:
+    """Compute the height map from the unwrapped phase image.
+
+    Parameters
+    ----------
+    dn: float
+        Refractive index difference between the sample and the surrounding medium.
+ 
+    """
+    return phase * wavelength_um / (2 * np.pi * dn)
 
 
 def main():
@@ -78,7 +90,7 @@ def main():
     # Compute the radius of the circular mask in pixels
     # The radius is k * NA in angular frequency, or NA / wavelength in spatial frequency
     radius_px = compute_mask_radius_px(num_px=crop_size, px_size_um=5.2, wavelength_um=0.641, mag=20, na=0.4)
-    print(f"Mask radius: {radius_px} px")
+    print(f"Mask radius: {radius_px} px")    
 
     # Apply a circular mask of radius R to the FFTs
     img_fft = mask_fft(img_fft, radius_px=radius_px)
@@ -103,9 +115,12 @@ def main():
     bg_unwrapped = unwrap(bg_wrapped)
 
     # Subtract the background from the image
-    final = img_unwrapped - bg_unwrapped
+    phase = img_unwrapped - bg_unwrapped
     
-    io.imshow(final)
+    # Compute the height map
+    height_map = compute_height_map(phase, wavelength_um=0.641, dn=0.59)
+
+    io.imshow(height_map)
     io.show()
 
 
