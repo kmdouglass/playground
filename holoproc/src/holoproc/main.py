@@ -63,7 +63,7 @@ def compute_height_map(phase: np.ndarray, wavelength_um: float, dn: float) -> np
 
 def main():
     img_path = Path("/home/kmd/src/playground/holoproc/data/2023-04-28-PS-Beads/15um-ps-bead-air-bg1-0.tif")
-    bg_path = Path("/home/kmd/src/playground/holoproc/data/2023-04-28-PS-Beads/15um-ps-bead-air-background-0.tif")
+    bg_path = Path("/home/kmd/src/playground/holoproc/data/2023-04-28-PS-Beads/15um-ps-bead-air-background-1.tif")
 
     img = io.imread(img_path)
     bg = io.imread(bg_path)
@@ -89,7 +89,8 @@ def main():
 
     # Compute the radius of the circular mask in pixels
     # The radius is k * NA in angular frequency, or NA / wavelength in spatial frequency
-    radius_px = compute_mask_radius_px(num_px=crop_size, px_size_um=5.2, wavelength_um=0.641, mag=20, na=0.4)
+    # Magnification (80x) is objective mag. (20x) times 4f system mag. (4x)
+    radius_px = compute_mask_radius_px(num_px=crop_size, px_size_um=5.2, wavelength_um=0.641, mag=80, na=0.4)
     print(f"Mask radius: {radius_px} px")    
 
     # Apply a circular mask of radius R to the FFTs
