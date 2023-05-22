@@ -1,10 +1,14 @@
-"""Process images from digital holography."""
+"""Process images from digital sideband holography."""
 
 from pathlib import Path
 
 import numpy as np
 from numpy.fft import fft2, fftshift
 from skimage import io, restoration
+
+
+IMG_PATH = Path("/home/kmd/src/playground/holoproc/data/2023-04-28-PS-Beads/15um-ps-bead-air-bg1-0.tif")
+BG_PATH = Path("/home/kmd/src/playground/holoproc/data/2023-04-28-PS-Beads/15um-ps-bead-air-background-1.tif")
 
 
 def compute_mask_radius_px(num_px: int, px_size_um: float, wavelength_um: float, mag: float, na: float) -> int:
@@ -61,10 +65,7 @@ def compute_height_map(phase: np.ndarray, wavelength_um: float, dn: float) -> np
     return phase * wavelength_um / (2 * np.pi * dn)
 
 
-def main():
-    img_path = Path("/home/kmd/src/playground/holoproc/data/2023-04-28-PS-Beads/15um-ps-bead-air-bg1-0.tif")
-    bg_path = Path("/home/kmd/src/playground/holoproc/data/2023-04-28-PS-Beads/15um-ps-bead-air-background-1.tif")
-
+def main(img_path: Path = IMG_PATH, bg_path: Path = BG_PATH):
     img = io.imread(img_path)
     bg = io.imread(bg_path)
 

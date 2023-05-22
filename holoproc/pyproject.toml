@@ -10,7 +10,8 @@ packages = [
 ]
 
 [tool.poetry.scripts]
-holoproc = "holoproc.main:main"
+sideband = "holoproc.sideband_processing:main"
+unwrap_t = "holoproc.temporal_unwrapping:main"
 
 [tool.poetry.dependencies]
 imagecodecs = "*"
