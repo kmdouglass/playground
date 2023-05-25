@@ -12,18 +12,18 @@ from holoproc import proc_sideband
 IMG_PATH = Path("/home/kmd/src/playground/holoproc/data/2023-05-08-Noise/noise.tif")
 
 
-def animate(imgs: np.ndarray, bg: np.ndarray, fps: int = 5, out_path: Path = None):
+def animate(imgs: np.ndarray, fps: int = 5, out_path: Path = None):
     """Animate a time series of images."""
     fig = plt.figure()
-    im = plt.imshow(imgs[0, :, :] - bg, animated=True)
+    im = plt.imshow(imgs[0, :, :], animated=True)
 
-    vmin, vmax = np.min(imgs - bg), np.max(imgs - bg)
+    vmin, vmax = np.min(imgs), np.max(imgs)
     cb = plt.colorbar(im)
     cb.set_label('phase (rad)')
     im.set_clim([vmin, vmax])
 
     def updatefig(i):
-        im.set_array(imgs[i, :, :] - bg)
+        im.set_array(imgs[i, :, :])
         return im,
 
     ani = animation.FuncAnimation(fig, updatefig, frames=imgs.shape[0], interval=1000 // fps, blit=True)
@@ -57,10 +57,24 @@ def main(img_path: Path = IMG_PATH, out_path: Path = None):
     bg = img[0, :, :]
     img = img[1:, :, :]
 
-    # Compute the phase images
-    bg_phase = proc_sideband(bg)
-    imgs_phase = np.empty_like(img)
-    for i, img_i in enumerate(img):
-        imgs_phase[i, :, :] = proc_sideband(img_i)
+    # Preallocate arrays for results
+    imgs_r = {
+        "img": np.empty_like(img),
+        "img_fft": np.empty_like(img, dtype=np.complex128),
+        "phase": np.empty_like(img),
+        "phase_unwrapped": np.empty_like(img),
+    }
 
-    animate(imgs_phase, bg_phase, out_path=out_path)
+    # Compute the phase images
+    bg_r = proc_sideband(bg)
+
+    for i, img_i in enumerate(img):
+        result = proc_sideband(img_i)
+        for k, v in result.items():
+            imgs_r[k][i, :, :] = v
+
+    io.imshow(np.abs(imgs_r["img_fft"][0, :, :]))
+    plt.show()
+
+    #animate(imgs_phase - bg_phase, out_path=out_path)
+    #animate(imgs_phase, out_path=Path("imgs_noise.mp4"))

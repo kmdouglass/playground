@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import TypedDict
 
 import numpy as np
 from numpy.fft import fft2, fftshift
@@ -8,6 +9,14 @@ from skimage import restoration
 class PhaseOption(Enum):
     """Phase computation options."""
     ARCTAN = "arctan"
+
+
+class Results(TypedDict):
+    """Results of processing a single sideband hologram."""
+    img: np.ndarray
+    img_fft: np.ndarray
+    phase: np.ndarray
+    phase_unwrapped: np.ndarray
 
 
 def compute_mask_radius_px(num_px: int, px_size_um: float, wavelength_um: float, mag: float, na: float) -> int:
@@ -76,6 +85,8 @@ def proc_sideband(
         Numerical aperture of the objective.
     carrier_freq : float
         Frequency of the carrier wave in radians per micron.
+    phase_option : PhaseOption
+        Option for computing the phase image.
 
     """
     num_px = img.shape[0]
@@ -111,4 +122,9 @@ def proc_sideband(
     # Unwrap the phase image
     img_unwrapped = unwrap(img_wrapped)
 
-    return img_unwrapped
+    return {
+        "img": img,
+        "img_fft": img_fft,
+        "phase": img_wrapped,
+        "phase_unwrapped": img_unwrapped,
+    }
