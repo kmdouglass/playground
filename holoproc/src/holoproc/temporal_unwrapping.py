@@ -73,8 +73,5 @@ def main(img_path: Path = IMG_PATH, out_path: Path = None):
         for k, v in result.items():
             imgs_r[k][i, :, :] = v
 
-    io.imshow(np.abs(imgs_r["img_fft"][0, :, :]))
-    plt.show()
-
-    #animate(imgs_phase - bg_phase, out_path=out_path)
-    #animate(imgs_phase, out_path=Path("imgs_noise.mp4"))
+    animate(imgs_r["phase_unwrapped"] - bg_r["phase_unwrapped"], out_path=out_path)
+    animate(imgs_r["phase_unwrapped"], out_path=Path("imgs_noise.mp4"))
