@@ -1,0 +1,114 @@
+from enum import Enum
+
+import numpy as np
+from numpy.fft import fft2, fftshift
+from skimage import restoration
+
+
+class PhaseOption(Enum):
+    """Phase computation options."""
+    ARCTAN = "arctan"
+
+
+def compute_mask_radius_px(num_px: int, px_size_um: float, wavelength_um: float, mag: float, na: float) -> int:
+    """Compute the radius of the circular mask in pixels.
+
+    Parameters
+    ----------
+    num_px : int
+        Number of pixels in the image (must be square).
+    px_size : float
+        Physical size of a pixel in microns.
+
+    """
+    # Compute the size of a pixel in the sample plane
+    dx = px_size_um / mag
+
+    # Sampling frequency in the sample plane
+    f_S = 1 / dx
+
+    # Sampling frequency in the Fourier plane
+    df = f_S / num_px
+
+    # Mask radius in the Fourier plane in pixels
+    # R = NA / wavelength / df
+    radius_px = int(na / wavelength_um / df)
+
+    return radius_px
+
+
+def mask_fft(img_fft: np.ndarray, radius_px: int = 10) -> np.ndarray:
+    """Apply a circular mask to a shifted FFT about the origin."""
+    fft_cp = img_fft.copy()
+    y, x = np.ogrid[0:fft_cp.shape[0], 0:fft_cp.shape[1]]
+    mask = (x - fft_cp.shape[0] // 2)**2 + (y - fft_cp.shape[1] // 2)**2 <= radius_px**2
+    fft_cp[~mask] = 0
+
+    return fft_cp
+
+
+def unwrap(phase: np.ndarray) -> np.ndarray:
+    return restoration.unwrap_phase(phase)
+
+
+def proc_sideband(
+        img: np.ndarray,
+        px_size_um: float = 5.2,
+        wavelength_um: float = 0.641,
+        mag: float = 80,
+        na: float = 0.4,
+        carrier_freq: float = 2 * np.pi / 3.3333,
+        phase_option: PhaseOption = PhaseOption.ARCTAN,
+    ) -> np.ndarray:
+    """Process a single sideband hologram.
+
+    Parameters
+    ----------
+    img : np.ndarray
+        Image to process. Must be square. Pixel values must be between 0 and 1.
+    px_size_um : float
+        Physical size of a pixel in microns.
+    wavelength_um : float
+        Wavelength of the illumination in microns.
+    mag : float
+        Magnification of the full imaging system (objective magnification * 4f magnification).
+    na : float
+        Numerical aperture of the objective.
+    carrier_freq : float
+        Frequency of the carrier wave in radians per micron.
+
+    """
+    num_px = img.shape[0]
+
+    # Compute the FFT of the image
+    img_fft = fftshift(fft2(img))
+
+    # Circular shift the FFTs to center the origin
+    dk = 2 * np.pi / (num_px * px_size_um)
+    shift_px = int(carrier_freq / dk)  # Amount to bring modulated component to center
+    img_fft = np.roll(img_fft, shift=shift_px, axis=1)
+
+    # Compute the radius of the circular mask in pixels
+    # The radius is k * NA in angular frequency, or NA / wavelength in spatial frequency
+    radius_px = compute_mask_radius_px(
+        num_px=num_px,
+        px_size_um=px_size_um,
+        wavelength_um=wavelength_um,
+        mag=mag,
+        na=na,
+    )
+
+    # Apply a circular mask of radius R to the FFT
+    img_fft = mask_fft(img_fft, radius_px=radius_px)
+
+    # Inverse FFT to get the modulated component
+    img_filtered = np.fft.ifft2(np.fft.ifftshift(img_fft))
+
+    # Compute the phase image
+    if phase_option == PhaseOption.ARCTAN:
+        img_wrapped = np.angle(img_filtered)
+
+    # Unwrap the phase image
+    img_unwrapped = unwrap(img_wrapped)
+
+    return img_unwrapped
