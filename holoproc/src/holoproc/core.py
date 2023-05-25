@@ -28,6 +28,12 @@ def compute_mask_radius_px(num_px: int, px_size_um: float, wavelength_um: float,
         Number of pixels in the image (must be square).
     px_size : float
         Physical size of a pixel in microns.
+    wavelength_um : float
+        Wavelength of the illumination in microns.
+    mag : float
+        Magnification of the full imaging system.
+    na : float
+        Numerical aperture of the objective.
 
     """
     # Compute the size of a pixel in the sample plane
@@ -64,9 +70,10 @@ def proc_sideband(
         img: np.ndarray,
         px_size_um: float = 5.2,
         wavelength_um: float = 0.641,
-        mag: float = 80,
+        mag_obj: float = 20,
+        mag_4f: float = 4,
         na: float = 0.4,
-        carrier_freq: float = 2 * np.pi / 3.3333,
+        grating_period: float = 3.3333,
         phase_option: PhaseOption = PhaseOption.ARCTAN,
     ) -> np.ndarray:
     """Process a single sideband hologram.
@@ -79,8 +86,10 @@ def proc_sideband(
         Physical size of a pixel in microns.
     wavelength_um : float
         Wavelength of the illumination in microns.
-    mag : float
-        Magnification of the full imaging system (objective magnification * 4f magnification).
+    mag_obj : float
+        Magnification of the objective.
+    mag_4f : float
+        Magnification of the 4f system.
     na : float
         Numerical aperture of the objective.
     carrier_freq : float
@@ -95,7 +104,8 @@ def proc_sideband(
     img_fft = fftshift(fft2(img))
 
     # Circular shift the FFTs to center the origin
-    dk = 2 * np.pi / (num_px * px_size_um)
+    dk = 2 * np.pi / (num_px * px_size_um / (mag_obj * mag_4f))
+    carrier_freq = 2 * np.pi * mag_obj / grating_period  # Multiply by mag_obj to get carrier freq in sample plane
     shift_px = int(carrier_freq / dk)  # Amount to bring modulated component to center
     img_fft = np.roll(img_fft, shift=shift_px, axis=1)
 
@@ -105,7 +115,7 @@ def proc_sideband(
         num_px=num_px,
         px_size_um=px_size_um,
         wavelength_um=wavelength_um,
-        mag=mag,
+        mag=mag_obj * mag_4f,
         na=na,
     )
 
