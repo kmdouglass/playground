@@ -3,9 +3,10 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib import animation
+from matplotlib import animation, colors
 import numpy as np
 import skimage.io as io
+import skimage.restoration as restoration
 
 from holoproc import proc_sideband
 
@@ -37,6 +38,10 @@ def animate(imgs: np.ndarray, fps: int = 5, out_path: Path = None):
 
 
 def main(img_path: Path = IMG_PATH, out_path: Path = None):
+    px_size_um = 5.2
+    mag_obj = 20
+    mag_4f = 4
+
     img = io.imread(img_path)
 
     # The first two frames are the same ¯\_(ツ)_/¯
@@ -66,12 +71,31 @@ def main(img_path: Path = IMG_PATH, out_path: Path = None):
     }
 
     # Compute the phase images
-    bg_r = proc_sideband(bg)
+    bg_r = proc_sideband(bg, px_size_um=px_size_um, mag_obj=mag_obj, mag_4f=mag_4f)
 
     for i, img_i in enumerate(img):
-        result = proc_sideband(img_i)
+        result = proc_sideband(img_i, px_size_um=px_size_um, mag_obj=mag_obj, mag_4f=mag_4f)
         for k, v in result.items():
             imgs_r[k][i, :, :] = v
 
-    animate(imgs_r["phase_unwrapped"] - bg_r["phase_unwrapped"], out_path=out_path)
-    animate(imgs_r["phase_unwrapped"], out_path=Path("imgs_noise.mp4"))
+    # Phase unwrap the 3D wrappped phase data
+    unwrapped_3d = restoration.unwrap_phase(imgs_r["phase_unwrapped"])
+
+    # Compute the std dev of the unwrapped phase
+    std_dev = np.std(unwrapped_3d, axis=0)
+
+    # Plot the std dev. Exclude the boundaries due to artifacts
+    noise_map = std_dev[10:-10, 10:-10]
+    x_max, y_max = (
+        (px_size_um / mag_obj / mag_4f) * noise_map.shape[0],
+        (px_size_um / mag_obj / mag_4f) * noise_map.shape[1]
+    )
+    plt.imshow(noise_map, extent=[0, x_max, 0, y_max])
+    plt.xlabel(r"$x, \mu m$")
+    plt.ylabel(r"$y, \mu m$")
+    plt.title("Temporal phase noise map over 1 second")
+    plt.colorbar(label=r"$\sigma_{\phi}$, rad")
+    plt.show()
+
+    # Save results
+    #animate(unwrapped_3d, out_path=Path("unwrapped_3d.mp4"))
