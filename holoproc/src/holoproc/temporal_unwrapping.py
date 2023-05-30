@@ -79,7 +79,7 @@ def main(img_path: Path = IMG_PATH, out_path: Path = None):
             imgs_r[k][i, :, :] = v
 
     # Phase unwrap the 3D wrappped phase data
-    unwrapped_3d = restoration.unwrap_phase(imgs_r["phase_unwrapped"])
+    unwrapped_3d = restoration.unwrap_phase(imgs_r["phase"])
 
     # Compute the std dev of the unwrapped phase
     std_dev = np.std(unwrapped_3d, axis=0)
