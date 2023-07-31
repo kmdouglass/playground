@@ -22,9 +22,9 @@ class Analyzer:
     def run(self, data) -> dict[str, Any]:
         # Fake analysis; randomly return a dict with a value of None 10% of the time
         if random.random() < 0.1:
-            return {'result': None}
+            return {"result": None}
         else:
-            return {'result': random.random()}
+            return {"result": random.random()}
 
 
 class Controller:
@@ -39,13 +39,7 @@ class Controller:
         seq: Iterable[MDAEvent] = iter(self._queue.get, self.STOP_EVENT)
         self._mmc.run_mda(seq)  # Non-blocking
 
-        # Not quite sure how to generate individual MDAEvents
-        seq = list(MDASequence(
-            stage_positions=[(100, 100, 30),],
-            time_plan={'interval': 1, 'loops': 1},
-            axis_order='tp',
-        ))
-        event = seq[0]
+        event = MDAEvent(exposure=10)
 
         # Start the acquisition            
         self._queue.put(event)
@@ -62,12 +56,15 @@ class Controller:
 
             # Decide what to do. This is the key part of the reactive loop.
             if results['result'] is None:
-                # Do nothing
+                # Do nothing and return
                 logger.info("Analyzer returned no results. Stopping...")
                 self._queue.put(self.STOP_EVENT)
                 break
             else:
+                # Adjust the exposure time based on the results and continue
                 logger.info("Analyzer returned results. Continuing...")
+                new_exp_time = 10 * results["result"]
+                event = MDAEvent(exposure=new_exp_time)
                 self._queue.put(event)
             
 
