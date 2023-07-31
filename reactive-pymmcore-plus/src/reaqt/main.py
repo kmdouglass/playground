@@ -31,6 +31,7 @@ class Controller:
     STOP_EVENT = StopEvent
 
     def __init__(self, analyzer: Analyzer, mmc: CMMCorePlus, queue: Queue):
+        self._analyzer = analyzer
         self._mmc = mmc
         self._queue = queue
 
@@ -53,8 +54,8 @@ class Controller:
             # Perform a measurement
             # Normally, we'd have to wait on a new image event here, otherwise there might not be
             # anything in the buffer yet.
-            time.sleep(1)
-            img = self._mmc.getLastImage()
+            time.sleep(.1)
+            img = self._mmc.getImage()
 
             # Analyze the image
             results = self._analyzer.run(img)
@@ -64,6 +65,7 @@ class Controller:
                 # Do nothing
                 logger.info("Analyzer returned no results. Stopping...")
                 self._queue.put(self.STOP_EVENT)
+                break
             else:
                 logger.info("Analyzer returned results. Continuing...")
                 self._queue.put(event)
