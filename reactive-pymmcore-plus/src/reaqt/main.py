@@ -1,36 +1,87 @@
+from logging import getLogger
 from queue import Queue
+import random
+import time
 from typing import Any, Iterable, Iterator
 
 from pymmcore_plus import CMMCorePlus
 from pymmcore_plus.mda import MDAEngine
-from useq import MDAEvent
+from useq import MDAEvent, MDASequence
 
 
-class Controller:
-    def __init__(self, mmc: CMMCorePlus, queue: Queue):
-        self._mmc = mmc
-        self._queue = queue
+logger = getLogger(__name__)
 
-    def run(self):
-        seq: Iterable[MDAEvent] = iter(self._queue.get, None)
-        self._mmc.mda.run(seq)
-            
 
-class ReaqtEngine(MDAEngine):
-    def __init__(self, mmc: CMMCorePlus, queue: Queue):
-        super().__init__(mmc)
-        self._queue = queue
-
-    def event_iterator(self, events: Iterable[MDAEvent]) -> Iterator[MDAEvent]:
-        for event in events:
-            yield event
+class StopEvent(MDAEvent):
+    """Sentinel value to indicate the end of the MDA sequence."""
+    pass
 
 
 class Analyzer:
     """Analyzes images and returns a dict of results."""
     def run(self, data) -> dict[str, Any]:
-        pass
+        # Fake analysis; randomly return a dict with a value of None 10% of the time
+        if random.random() < 0.1:
+            return {'result': None}
+        else:
+            return {'result': random.random()}
 
+
+class Controller:
+    STOP_EVENT = StopEvent
+
+    def __init__(self, analyzer: Analyzer, mmc: CMMCorePlus, queue: Queue):
+        self._mmc = mmc
+        self._queue = queue
+
+    def run(self):
+        seq: Iterable[MDAEvent] = iter(self._queue.get, self.STOP_EVENT)
+        self._mmc.run_mda(seq)  # Non-blocking
+
+        # Not quite sure how to generate individual MDAEvents
+        seq = list(MDASequence(
+            stage_positions=[(100, 100, 30),],
+            time_plan={'interval': 1, 'loops': 1},
+            axis_order='tp',
+        ))
+        event = seq[0]
+
+        # Start the acquisition            
+        self._queue.put(event)
+
+        while True:
+            # Perform a measurement
+            # Normally, we'd have to wait on a new image event here, otherwise there might not be
+            # anything in the buffer yet.
+            time.sleep(1)
+            img = self._mmc.getLastImage()
+
+            # Analyze the image
+            results = self._analyzer.run(img)
+
+            # Decide what to do. This is the key part of the reactive loop.
+            if results['result'] is None:
+                # Do nothing
+                logger.info("Analyzer returned no results. Stopping...")
+                self._queue.put(self.STOP_EVENT)
+            else:
+                logger.info("Analyzer returned results. Continuing...")
+                self._queue.put(event)
+            
+
+class ReaqtEngine(MDAEngine):
+    """Serves as the measurement instrument in the measure-analyze-control loop."""
+    def __init__(self, mmc: CMMCorePlus, queue: Queue, stop_event: Any = Controller.STOP_EVENT):
+        super().__init__(mmc)
+        self._queue = queue
+        self._stop_event = stop_event
+
+    def event_iterator(self, events: Iterable[MDAEvent]) -> Iterator[MDAEvent]:
+        for event in events:
+            if event is self._stop_event:
+                break
+
+            yield event
 
 
 def main():
@@ -41,9 +92,11 @@ def main():
     mmc.loadSystemConfiguration()
     mmc.mda.set_engine(ReaqtEngine(mmc, q))
 
-    # Setup the controller
-    controller = Controller(mmc, q)
+    # Setup the controller and analyzer
+    analyzer = Analyzer()
+    controller = Controller(analyzer, mmc, q)
 
+    # Start the acquisition
     controller.run()
 
 
