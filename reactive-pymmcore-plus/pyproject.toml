@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "reactive-pymmcore-plus"
+version = "0.1.0"
+description = "Prototype of a reactive acquistion using pymmcore-plus"
+authors = ["Kyle M. Douglass <kyle.douglass@epfl.ch>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "reaqt", from = "src" }
+]
+
+[tool.poetry.scripts]
+reaqt = "reaqt.main:main"
+
+[tool.poetry.dependencies]
+pymmcore-plus = "^0.7.0"
+python = "^3.8"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
