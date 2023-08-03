@@ -1,11 +1,14 @@
+"""Simple simulator demonstrating event-driven acquisitions with pymmcore-plus"""
+
+
 from logging import getLogger
 from queue import Queue
 import random
 import time
-from typing import Any, Iterable, Iterator
+from typing import Any, Iterable
 
 from pymmcore_plus import CMMCorePlus
-from useq import MDAEvent, MDASequence
+from useq import MDAEvent
 
 
 logger = getLogger(__name__)
