@@ -5,16 +5,10 @@ import time
 from typing import Any, Iterable, Iterator
 
 from pymmcore_plus import CMMCorePlus
-from pymmcore_plus.mda import MDAEngine
 from useq import MDAEvent, MDASequence
 
 
 logger = getLogger(__name__)
-
-
-class StopEvent(MDAEvent):
-    """Sentinel value to indicate the end of the MDA sequence."""
-    pass
 
 
 class Analyzer:
@@ -28,7 +22,7 @@ class Analyzer:
 
 
 class Controller:
-    STOP_EVENT = StopEvent
+    STOP_EVENT = object()
 
     def __init__(self, analyzer: Analyzer, mmc: CMMCorePlus, queue: Queue):
         self._analyzer = analyzer
@@ -49,6 +43,7 @@ class Controller:
             # Normally, we'd have to wait on a new image event here, otherwise there might not be
             # anything in the buffer yet.
             time.sleep(.1)
+            self._mmc.snapImage()
             img = self._mmc.getImage()
 
             # Analyze the image
@@ -66,21 +61,6 @@ class Controller:
                 new_exp_time = 10 * results["result"]
                 event = MDAEvent(exposure=new_exp_time)
                 self._queue.put(event)
-            
-
-class ReaqtEngine(MDAEngine):
-    """Serves as the measurement instrument in the measure-analyze-control loop."""
-    def __init__(self, mmc: CMMCorePlus, queue: Queue, stop_event: Any = Controller.STOP_EVENT):
-        super().__init__(mmc)
-        self._queue = queue
-        self._stop_event = stop_event
-
-    def event_iterator(self, events: Iterable[MDAEvent]) -> Iterator[MDAEvent]:
-        for event in events:
-            if event is self._stop_event:
-                break
-
-            yield event
 
 
 def main():
@@ -89,7 +69,6 @@ def main():
     # Setup the MM Core
     mmc = CMMCorePlus()
     mmc.loadSystemConfiguration()
-    mmc.mda.set_engine(ReaqtEngine(mmc, q))
 
     # Setup the controller and analyzer
     analyzer = Analyzer()
