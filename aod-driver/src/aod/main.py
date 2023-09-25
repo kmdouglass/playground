@@ -1,7 +1,6 @@
 import atexit
 from dataclasses import dataclass
 from functools import partial
-import io
 import math
 import sys
 from typing import Self
@@ -98,16 +97,18 @@ def debug(f_x: Freq, f_y: Freq, power: Power) -> None:
     print(f"X: {f_x.hex()}, Y: {f_y.hex()}, Power: {power.hex()}")
 
 
-def send(sio: io.TextIOWrapper, f_x: Freq, f_y: Freq, power: Power, terminator="\r") -> None:
+def send(ser: serial.Serial, f_x: Freq, f_y: Freq, power: Power, terminator="\r") -> None:
     """Send the hexadecimal representation of the X and Y frequencies to the AOD."""
-    cmdx = f":L0G{f_x.hex()}P{power.hex()}" + terminator
-    cmdy = f":L1G{f_y.hex()}P{power.hex()}" + terminator
+    cmdx = f":L0G{f_x.hex()}P{power.hex()}{terminator}"
+    cmdy = f":L1G{f_y.hex()}P{power.hex()}{terminator}"
 
-    sio.write(cmdx.encode())
-    _ = sio.readline()
+    ser.write(cmdx.encode())
+    ser.flush()
+    _ = ser.readline()
     
-    sio.write(cmdy.encode())
-    _ = sio.readline()
+    ser.write(cmdy.encode())
+    ser.flush()
+    _ = ser.readline()
 
 
 def main(
@@ -144,9 +145,8 @@ def main(
         atexit.register(lambda: print("Exiting..."))
     else:
         ser = serial.Serial(COM_PORT, BAUD)
-        sio = io.TextIOWrapper(io.BufferedRWPair(ser, ser), line_buffering=True)
         atexit.register(ser.close)
-        strategy = partial(send, sio)
+        strategy = partial(send, ser)
 
     f_center: Freq = (fmax + fmin) / 2
     f_radius = (fmax - fmin) * radius / 2
