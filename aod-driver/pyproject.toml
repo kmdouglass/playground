@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "AOD Driver"
+version = "0.1.0"
+description = "Drive an AA Optoelectronic 2-axis AOD"
+authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "aod", from = "src" }
+]
+
+[tool.poetry.scripts]
+driver = "aod.main:main"
+
+[tool.poetry.dependencies]
+aenum = "*"
+pyserial = "*"
+python = "^3.11"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
