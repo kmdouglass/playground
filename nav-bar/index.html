@@ -1,0 +1,61 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navbar Example</title>
+
+    <link href="./stylesheet.css" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar" aria-label="main navigation" role="navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="https://browser.science">🍒</a>
+            <a aria-expanded="false" aria-label="menu" class="navbar-burger" data-target="navMenu" role="button">
+                <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div class="navbar-menu" id="navMenu">
+            <div class="navbar-start">
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link">File</a>
+                    <div class="navbar-dropdown">
+                        <a class="navbar-item">Open</a>
+                        <a class="navbar-item">Save</a>
+                    </div>
+                </div>
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link">Examples</a>
+                    <div class="navbar-dropdown"><a class="navbar-item" id="preset-planoconvex">Planoconvex lens</a><a
+                            class="navbar-item" id="preset-petzval">Petzval objective</a></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <h1>CSS Navbar with Bulma</h1>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get all "navbar-burger" elements
+            const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+            // Check if there are any navbar burgers
+            if ($navbarBurgers.length > 0) {
+                // Add a click event on each of them
+                $navbarBurgers.forEach(el => {
+                    el.addEventListener('click', () => {
+                        // Get the target from the "data-target" attribute
+                        const target = el.dataset.target;
+                        const $target = document.getElementById(target);
+                        // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+                        el.classList.toggle('is-active');
+                        $target.classList.toggle('is-active');
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
