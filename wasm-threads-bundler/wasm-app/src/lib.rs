@@ -37,3 +37,9 @@ impl WasmApp {
         JsValue::from(self.state.counter())
     }
 }
+
+/// To be called by the worker
+#[wasm_bindgen]
+pub fn isEven(n: u32) -> JsValue {
+    JsValue::from(n % 2 == 0)
+}
