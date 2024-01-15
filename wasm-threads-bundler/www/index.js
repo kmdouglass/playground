@@ -1,7 +1,8 @@
-import init, { greet } from './pkg/wasm_app.js';
+import init, { WasmApp } from './pkg/wasm_app.js';
 
 init().then(() => {
-    greet('Dude or Dudette');
+    let app = new WasmApp();
+    console.log(app.counter());
 });
 
 // let worker = new Worker(new URL('./worker.js', import.meta.url));

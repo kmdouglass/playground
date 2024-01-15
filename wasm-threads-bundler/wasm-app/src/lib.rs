@@ -1,11 +1,39 @@
 use wasm_bindgen::prelude::*;
 
+/// The application state
+struct AppState {
+    counter: u32,
+}
+
+impl AppState {
+    fn new() -> Self {
+        Self { counter: 0 }
+    }
+
+    fn counter(&mut self) -> u32 {
+        let ret = self.counter;
+        self.counter += 1;
+        ret
+    }
+}
+
+/// Wraps the Rust application state and exposes it to JavaScript
 #[wasm_bindgen]
-extern "C" {
-    pub fn alert(s: &str);
+pub struct WasmApp {
+    state: AppState,
 }
 
 #[wasm_bindgen]
-pub fn greet(name: &str) {
-    alert(&format!("Hello, {}!", name));
+#[allow(non_snake_case)]
+impl WasmApp {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            state: AppState::new(),
+        }
+    }
+
+    pub fn counter(&mut self) -> JsValue {
+        JsValue::from(self.state.counter())
+    }
 }
