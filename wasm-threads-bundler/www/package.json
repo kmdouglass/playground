@@ -1,0 +1,15 @@
+{
+    "private": true,
+    "scripts": {
+        "build:wasm": "RUSTFLAGS='-C target-feature=+atomics,+bulk-memory,+mutable-globals' rustup run nightly-2024-01-12 wasm-pack build --target web --out-dir ../www/pkg ../wasm-app -- -Z build-std=panic_abort,std",
+        "build": "npm run build:wasm && webpack --config webpack.config.js",
+        "start": "webpack-dev-server"
+    },
+    "devDependencies": {
+        "@webpack-cli/serve": "*",
+        "copy-webpack-plugin": "*",
+        "webpack": "*",
+        "webpack-cli": "*",
+        "webpack-dev-server": "*"
+    }
+}
