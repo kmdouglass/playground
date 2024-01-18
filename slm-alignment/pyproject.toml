@@ -13,6 +13,7 @@ packages = [
 slm = "slm.main:main"
 
 [tool.poetry.dependencies]
+matplotlib = "*"
 numpy = "*"
 python = "^3.11"
 
