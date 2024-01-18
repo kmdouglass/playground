@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "SLM Alignment"
+version = "0.1.0"
+description = "Generate patterns to align a spatial light modulator"
+authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "slm", from = "src" }
+]
+
+[tool.poetry.scripts]
+slm = "slm.main:main"
+
+[tool.poetry.dependencies]
+numpy = "*"
+python = "^3.11"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
