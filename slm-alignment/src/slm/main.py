@@ -1,4 +1,5 @@
 from argparse import ArgumentParser, Namespace
+from pathlib import Path
 import sys
 import warnings
 
@@ -11,6 +12,7 @@ PATTERN_CENTER: tuple[int, int] = (1000, 500)
 PATTERN_BACKGROUND: int = 0
 PATTERN_LOW: int = 100
 PATTERN_HIGH: int = 255
+PATTERN_OUTPUT = Path("alignment-pattern.tif")
 PATTERN_RADIUS: int = 250
 SLM_BIT_DEPTH: int = 8
 SLM_HEIGHT: int = 1080
@@ -19,6 +21,18 @@ SLM_WIDTH: int = 1920
 
 def parse_args(args) -> Namespace:
     parser = ArgumentParser(description="Create an alignment pattern for the SLM.")
+    parser.add_argument(
+        "-d",
+        "--debug",
+        action="store_true",
+        help="Show debug information.",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=PATTERN_OUTPUT,
+        help=f"The output path of the alignment pattern file. Default: {PATTERN_OUTPUT}",
+    )
     parser.add_argument(
         "--height",
         type=int,
@@ -88,8 +102,11 @@ def main():
         cli_args.background,
     )
 
-    io.imshow(pattern, cmap="gray")
-    io.show()
+    io.imsave(cli_args.output, pattern)
+
+    if cli_args.debug:
+        io.imshow(pattern, cmap="gray")
+        io.show()
 
 
 if __name__ == "__main__":
