@@ -17,6 +17,9 @@ numpy = "*"
 python = "^3.11"
 scikit-image = "*"
 
+[tool.poetry.dev-dependencies]
+black = "*"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -19,14 +19,55 @@ SLM_WIDTH: int = 1920
 
 def parse_args(args) -> Namespace:
     parser = ArgumentParser(description="Create an alignment pattern for the SLM.")
-    parser.add_argument("--height", type=int, default=SLM_HEIGHT, help=f"The height of the SLM in pixels. Default: {SLM_HEIGHT}")
-    parser.add_argument("--width", type=int, default=SLM_WIDTH, help=f"The width of the SLM in pixels. Default: {SLM_WIDTH}")
-    parser.add_argument("--bit_depth", type=int, default=SLM_BIT_DEPTH, help=f"The bit depth of the SLM. Default: {SLM_BIT_DEPTH}")
-    parser.add_argument("--center", type=int, nargs=2, default=PATTERN_CENTER, help=f"The center of the alignment pattern. Default: {PATTERN_CENTER}")
-    parser.add_argument("--radius", type=int, default=PATTERN_RADIUS, help=f"The radius of the alignment pattern. Default: {PATTERN_RADIUS}")
-    parser.add_argument("--high", type=int, default=PATTERN_HIGH, help=f"The high value of the alignment pattern. Default: {PATTERN_HIGH}")
-    parser.add_argument("--low", type=int, default=PATTERN_LOW, help=f"The low value of the alignment pattern. Default: {PATTERN_LOW}")
-    parser.add_argument("--background", type=int, default=PATTERN_BACKGROUND, help=f"The background value of the alignment pattern. Default: {PATTERN_BACKGROUND}")
+    parser.add_argument(
+        "--height",
+        type=int,
+        default=SLM_HEIGHT,
+        help=f"The height of the SLM in pixels. Default: {SLM_HEIGHT}",
+    )
+    parser.add_argument(
+        "--width",
+        type=int,
+        default=SLM_WIDTH,
+        help=f"The width of the SLM in pixels. Default: {SLM_WIDTH}",
+    )
+    parser.add_argument(
+        "--bit_depth",
+        type=int,
+        default=SLM_BIT_DEPTH,
+        help=f"The bit depth of the SLM. Default: {SLM_BIT_DEPTH}",
+    )
+    parser.add_argument(
+        "--center",
+        type=int,
+        nargs=2,
+        default=PATTERN_CENTER,
+        help=f"The center of the alignment pattern. Default: {PATTERN_CENTER}",
+    )
+    parser.add_argument(
+        "--radius",
+        type=int,
+        default=PATTERN_RADIUS,
+        help=f"The radius of the alignment pattern. Default: {PATTERN_RADIUS}",
+    )
+    parser.add_argument(
+        "--high",
+        type=int,
+        default=PATTERN_HIGH,
+        help=f"The high value of the alignment pattern. Default: {PATTERN_HIGH}",
+    )
+    parser.add_argument(
+        "--low",
+        type=int,
+        default=PATTERN_LOW,
+        help=f"The low value of the alignment pattern. Default: {PATTERN_LOW}",
+    )
+    parser.add_argument(
+        "--background",
+        type=int,
+        default=PATTERN_BACKGROUND,
+        help=f"The background value of the alignment pattern. Default: {PATTERN_BACKGROUND}",
+    )
 
     return parser.parse_args(args)
 

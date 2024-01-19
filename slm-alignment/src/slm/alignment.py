@@ -9,7 +9,7 @@ type RefFrame = tuple[npt.NDArray[Any], npt.NDArray[Any]]
 
 def ref_frame(height: int, width: int) -> RefFrame:
     """Returns the reference frame of the SLM in units of pixels.
-    
+
     The origin is at the top left corner of the SLM, and the y-axis is pointing downwards.
 
     """
@@ -19,13 +19,13 @@ def ref_frame(height: int, width: int) -> RefFrame:
 
 
 def create_pattern(
-        grid: RefFrame,
-        center: tuple[int, int],
-        radius: int,
-        high: int = 255,
-        low: int = 100,
-        background: int = 0,
-    ) -> npt.NDArray[np.uint8]:
+    grid: RefFrame,
+    center: tuple[int, int],
+    radius: int,
+    high: int = 255,
+    low: int = 100,
+    background: int = 0,
+) -> npt.NDArray[np.uint8]:
     """Create the alignment pattern."""
     assert low < high, "The low value must be less than the high value."
 
@@ -40,6 +40,6 @@ def create_pattern(
     pattern[np.logical_and(y < pos_line, y < neg_line)] = high
     pattern[np.logical_and(y > pos_line, y > neg_line)] = high
 
-    pattern[np.sqrt((x - center[0])**2 + (y - center[1])**2) > radius] = background
+    pattern[np.sqrt((x - center[0]) ** 2 + (y - center[1]) ** 2) > radius] = background
 
     return pattern.astype(np.uint8)
