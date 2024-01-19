@@ -6,6 +6,7 @@ import numpy as np
 import numpy.typing as npt
 
 
+SLM_BIT_DEPTH: int = 8
 SLM_HEIGHT: int = 1080
 SLM_WIDTH: int = 1920
 
@@ -24,14 +25,32 @@ def ref_frame(height: int, width: int) -> RefFrame:
     return x, y
 
 
-def create_pattern(grid: RefFrame, center: tuple[int, int], radius: int) -> npt.NDArray[np.uint8]:
+def create_pattern(
+        grid: RefFrame,
+        center: tuple[int, int],
+        radius: int,
+        high: int = 255,
+        low: int = 100,
+        background: int = 0,
+    ) -> npt.NDArray[np.uint8]:
     """Create the alignment pattern."""
+    assert low < high, "The low value must be less than the high value."
+    assert high < 2**SLM_BIT_DEPTH, "The high value must be less than the maximum value of the SLM."
+
     x, y = grid
-    pattern = np.zeros_like(x)
+    pattern = np.ones_like(x) * low
 
-    pattern[np.sqrt((x - center[0])**2 + (y - center[1])**2) < radius] = 255
+    # Define two lines at +/- 45 degrees from the center.
+    pos_line = x - center[0] + center[1]
+    neg_line = -x + center[0] + center[1]
 
-    return pattern
+    # Fill in the upper and lower quadrants created by the two lines.
+    pattern[np.logical_and(y < pos_line, y < neg_line)] = high
+    pattern[np.logical_and(y > pos_line, y > neg_line)] = high
+
+    pattern[np.sqrt((x - center[0])**2 + (y - center[1])**2) > radius] = background
+
+    return pattern.astype(np.uint8)
 
 
 def main():
@@ -39,7 +58,7 @@ def main():
         warnings.warn("The SLM height or width is too large for the data type.")
 
     grid = ref_frame(SLM_HEIGHT, SLM_WIDTH)
-    pattern = create_pattern(grid, (100, 200), 50)
+    pattern = create_pattern(grid, (1000, 500), 200)
 
     plt.imshow(pattern, cmap="gray")
     plt.show()
