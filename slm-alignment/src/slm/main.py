@@ -2,7 +2,7 @@ from argparse import ArgumentParser, Namespace
 import sys
 import warnings
 
-import matplotlib.pyplot as plt
+import skimage.io as io
 
 from slm import create_pattern, ref_frame
 
@@ -47,8 +47,8 @@ def main():
         cli_args.background,
     )
 
-    plt.imshow(pattern, cmap="gray")
-    plt.show()
+    io.imshow(pattern, cmap="gray")
+    io.show()
 
 
 if __name__ == "__main__":
