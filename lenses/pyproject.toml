@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "lenses"
+version = "0.1.0"
+description = "First order properties of various lenses"
+authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "lenses", from = "src" }
+]
+
+[tool.poetry.scripts]
+lenses = "lenses.main:main"
+
+[tool.poetry.dependencies]
+numpy = "*"
+python = "^3.11"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
