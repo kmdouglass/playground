@@ -16,6 +16,10 @@ lenses = "lenses.main:main"
 numpy = "*"
 python = "^3.11"
 
+[tool.poetry.dev-dependencies]
+black = "*"
+pytest = "*"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
