@@ -1,5 +1,18 @@
 """Models for paraxial optics."""
 from dataclasses import dataclass
+from enum import Enum
+
+
+class SurfaceType(Enum):
+    """Types of surfaces.
+    
+    The surface type determines the ray transfer matrix used to propagate
+    rays through the surface.
+    
+    """
+
+    CONVEX = "convex"
+    CONCAVE = "concave"
 
 
 @dataclass(frozen=True)

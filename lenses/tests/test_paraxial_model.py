@@ -2,7 +2,7 @@ from math import inf
 
 import pytest
 
-from lenses import Gap, Surface, System
+from ezray import Gap, Surface, System
 
 
 def test_system():

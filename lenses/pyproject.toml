@@ -1,16 +1,16 @@
 [tool.poetry]
-name = "lenses"
+name = "ezray"
 version = "0.1.0"
-description = "First order properties of various lenses"
+description = "First order ray tracer for optical systems"
 authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [
-    { include = "lenses", from = "src" }
+    { include = "ezray", from = "src" }
 ]
 
 [tool.poetry.scripts]
-lenses = "lenses.main:main"
+lenses = "ezray.main:main"
 
 [tool.poetry.dependencies]
 numpy = "*"
