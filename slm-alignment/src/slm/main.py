@@ -13,7 +13,7 @@ from slm.phase_ring import create_phase_ring_pattern
 
 PATTERN_CENTER: tuple[int, int] = (1000, 500)
 PATTERN_BACKGROUND: int = 0
-PATTERN_OUTPUT = Path("alignment-pattern.png")
+PATTERN_OUTPUT = Path("pattern.png")
 SLM_BIT_DEPTH: int = 8
 SLM_HEIGHT: int = 1080
 SLM_WIDTH: int = 1920
