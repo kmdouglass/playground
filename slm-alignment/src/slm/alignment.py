@@ -1,9 +1,7 @@
-from typing import Any
-
 import numpy as np
 import numpy.typing as npt
 
-from slm import RefFrame, ref_frame
+from slm import RefFrame
 
 
 def create_alignment_pattern(

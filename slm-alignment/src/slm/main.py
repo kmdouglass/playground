@@ -8,6 +8,7 @@ import skimage.io as io
 
 from slm import ref_frame
 from slm.alignment import create_alignment_pattern
+from slm.phase_ring import create_phase_ring_pattern
 
 
 PATTERN_CENTER: tuple[int, int] = (1000, 500)
@@ -19,15 +20,20 @@ SLM_WIDTH: int = 1920
 
 ALIGNMENT_PATTERN_LOW: int = 100
 ALIGNMENT_PATTERN_HIGH: int = 255
-ALIGNMENT_PATTERN_RADIUS: int = 250
+ALIGNMENT_PATTERN_RADIUS: int = 300
+
+PHASE_RING_PATTERN_INNER_RADIUS: int = 300
+PHASE_RING_PATTERN_OUTER_RADIUS: int = 375
+PHASE_RING_PATTERN_PHASE: int = 128
 
 
 class Pattern(Enum):
     ALIGNMENT = "alignment"
+    PHASE_RING = "phase_ring"
 
 
 def parse_args(args) -> Namespace:
-    parser = ArgumentParser(description="Create an alignment pattern for the SLM.")
+    parser = ArgumentParser(description="Create patterns for the SLM.")
     parser.add_argument(
         "-d",
         "--debug",
@@ -72,6 +78,7 @@ def parse_args(args) -> Namespace:
         help=f"The background value of the alignment pattern. Default: {PATTERN_BACKGROUND}",
     )
 
+    # Alignment pattern
     subparsers = parser.add_subparsers(help="Pattern-specific arguments.")
     subparser_alignment = subparsers.add_parser("alignment", help="Alignment pattern")
     subparser_alignment.set_defaults(pattern=Pattern.ALIGNMENT)
@@ -95,6 +102,29 @@ def parse_args(args) -> Namespace:
         help=f"The low value of the alignment pattern. Default: {ALIGNMENT_PATTERN_LOW}",
     )
 
+    # Phase ring pattern
+    subparser_phase_ring = subparsers.add_parser("phase_ring", help="Phase ring pattern")
+    subparser_phase_ring.set_defaults(pattern=Pattern.PHASE_RING)
+
+    subparser_phase_ring.add_argument(
+        "--inner_radius",
+        type=int,
+        default=PHASE_RING_PATTERN_INNER_RADIUS,
+        help=f"The inner radius of the phase ring pattern. Default: {PHASE_RING_PATTERN_INNER_RADIUS}",
+    )
+    subparser_phase_ring.add_argument(
+        "--outer_radius",
+        type=int,
+        default=PHASE_RING_PATTERN_OUTER_RADIUS,
+        help=f"The outer radius of the phase ring pattern. Default: {PHASE_RING_PATTERN_OUTER_RADIUS}",
+    )
+    subparser_phase_ring.add_argument(
+        "--phase",
+        type=int,
+        default=PHASE_RING_PATTERN_PHASE,
+        help=f"The phase of the phase ring pattern. Default: {PHASE_RING_PATTERN_PHASE}",
+    )
+
     return parser.parse_args(args)
 
 
@@ -114,6 +144,15 @@ def main():
                 cli_args.radius,
                 cli_args.high,
                 cli_args.low,
+                cli_args.background,
+            )
+        case Pattern.PHASE_RING:
+            pattern = create_phase_ring_pattern(
+                grid,
+                cli_args.center,
+                cli_args.inner_radius,
+                cli_args.outer_radius,
+                cli_args.phase,
                 cli_args.background,
             )
         case _:
