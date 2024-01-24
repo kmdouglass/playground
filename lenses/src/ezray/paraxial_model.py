@@ -1,6 +1,7 @@
 """Models for paraxial optics."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import Callable, Iterator, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -21,18 +22,6 @@ SurfaceType = Enum(
 )
 
 
-RTM = {
-    SurfaceType.IMAGE: lambda n0, n1, R: np.array([[1, 0], [0, 1]]),
-    SurfaceType.OBJECT: lambda n0, n1, R: np.array([[1, 0], [0, 1]]),
-    SurfaceType.REFRACTING_FLAT: lambda n0, n1, R: np.array([[1, 0], [0, n0 / n1]]),
-    SurfaceType.REFRACTING_SPHERE: lambda n0, n1, R: np.array(
-        [[1, 0], [(n0 - n1) / R / n1, n0 / n1]]
-    ),
-    SurfaceType.REFLECTING_FLAT: lambda n0, n1, R: np.array([[1, 0], [0, 1]]),
-    SurfaceType.REFLECTING_SPHERE: lambda n0, n1, R: np.array([[1, 0], [-2 / R, 1]]),
-}
-
-
 @dataclass(frozen=True)
 class Surface:
     diameter: float
@@ -49,6 +38,25 @@ class Gap:
 @dataclass(frozen=True)
 class System:
     model: list[Surface | Gap]
+
+    RTMs: dict[
+        SurfaceType, Callable[[float, float, float], npt.NDArray[Float]]
+    ] = field(
+        default_factory=lambda: {
+            SurfaceType.IMAGE: lambda n0, n1, R: np.array([[1, 0], [0, 1]]),
+            SurfaceType.OBJECT: lambda n0, n1, R: np.array([[1, 0], [0, 1]]),
+            SurfaceType.REFRACTING_FLAT: lambda n0, n1, R: np.array(
+                [[1, 0], [0, n0 / n1]]
+            ),
+            SurfaceType.REFRACTING_SPHERE: lambda n0, n1, R: np.array(
+                [[1, 0], [(n0 - n1) / R / n1, n0 / n1]]
+            ),
+            SurfaceType.REFLECTING_FLAT: lambda n0, n1, R: np.array([[1, 0], [0, 1]]),
+            SurfaceType.REFLECTING_SPHERE: lambda n0, n1, R: np.array(
+                [[1, 0], [-2 / R, 1]]
+            ),
+        }
+    )
 
     def __post_init__(self):
         # Ensure that the first and last elements are object and image surfaces.
@@ -72,6 +80,19 @@ class System:
                 if not isinstance(element, Gap):
                     raise TypeError("Odd elements must be gaps.")
 
+    def __iter__(self) -> Iterator[tuple[Optional[Gap], Surface, Optional[Gap]]]:
+        """Iterate over the system model."""
+        surfaces = self.surfaces()
+        gaps = self.gaps()
+
+        for i, surface in enumerate(surfaces):
+            if i == 0:
+                yield None, surface, gaps[i]
+            elif i == len(surfaces) - 1:
+                yield gaps[i - 1], surface, None
+            else:
+                yield gaps[i - 1], surface, gaps[i]
+
     def surfaces(self) -> list[Surface]:
         return [element for element in self.model if isinstance(element, Surface)]
 
@@ -83,9 +104,16 @@ class System:
         ray = self._construction_rays()
         raise NotImplementedError
 
-    def _is_obj_at_inf(self) -> bool:
-        gaps = self.gaps()
-        return np.isinf(gaps[0].thickness)
+    def trace(self, rays: npt.NDArray[Float]) -> npt.NDArray[Float]:
+        """Trace rays through a system.
+
+        Parameters
+        ----------
+        rays : npt.NDArray[Float]
+            Array of rays to trace through the system. Each row is a ray, and the
+            columns are the ray height and angle.
+        """
+        raise NotImplementedError
 
     def _construction_rays(self) -> npt.NDArray[Float]:
         """Return rays for construction of the system."""
@@ -96,3 +124,21 @@ class System:
         else:
             # Ray originating at the optical axis at an angle of 1.
             return np.array([0.0, 1.0])
+
+    def _is_obj_at_inf(self) -> bool:
+        gaps = self.gaps()
+        return np.isinf(gaps[0].thickness)
+
+    def _rtms(self) -> list[npt.NDArray[Float]]:
+        """Compute the ray transfer matrices for each surface."""
+
+        rtms = []
+        for i, surface in enumerate(self.surfaces()[1:-1]):
+            n0 = self.gaps()[i].refractive_index
+            n1 = self.gaps()[i + 1].refractive_index
+            R = surface.radius_of_curvature
+            rtms.append(self.RTMs[surface.surface_type](n0, n1, R))
+
+        # Append the image surface
+
+        return rtms

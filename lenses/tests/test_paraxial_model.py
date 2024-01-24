@@ -5,23 +5,24 @@ import pytest
 from ezray import Gap, Surface, SurfaceType, System
 
 
-def test_system():
+@pytest.fixture
+def convexplano_lens():
+    """Convexplano lens with object at infinity."""
     surf_0 = Surface(
         diameter=25, radius_of_curvature=inf, surface_type=SurfaceType.OBJECT
     )
     gap_0 = Gap(refractive_index=1.0, thickness=-inf)
     surf_1 = Surface(
         diameter=25,
-        radius_of_curvature=25.8,
+        radius_of_curvature=-100,
         surface_type=SurfaceType.REFRACTING_SPHERE,
     )
-    gap_1 = Gap(refractive_index=1.5, thickness=5.3)
+    gap_1 = Gap(refractive_index=1.5, thickness=100)
     surf_2 = Surface(
         diameter=25, radius_of_curvature=inf, surface_type=SurfaceType.IMAGE
     )
 
-    # Doesn't raise an exception.
-    System([surf_0, gap_0, surf_1, gap_1, surf_2])
+    return System([surf_0, gap_0, surf_1, gap_1, surf_2])
 
 
 def test_system_model_first_element_not_surface():
@@ -150,3 +151,22 @@ def test_system_gaps():
     system = System([surf_0, gap_0, surf_1, gap_1, surf_2])
 
     assert system.gaps() == [gap_0, gap_1]
+
+
+def test_system_model_iterator(convexplano_lens):
+    """Test the iterator of the model, which returns (Optinal[Gap], Surface, Optional[Gap]) tuples."""
+    results = list(convexplano_lens)
+    assert results == [
+        (None, convexplano_lens.model[0], convexplano_lens.model[1]),
+        (
+            convexplano_lens.model[1],
+            convexplano_lens.model[2],
+            convexplano_lens.model[3],
+        ),
+        (convexplano_lens.model[3], convexplano_lens.model[4], None),
+    ]
+
+    for result in results:
+        assert isinstance(result[0], Gap) or result[0] is None
+        assert isinstance(result[1], Surface)
+        assert isinstance(result[2], Gap) or result[2] is None
