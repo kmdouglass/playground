@@ -1,5 +1,6 @@
 from math import inf
 
+from numpy.testing import assert_array_equal
 import pytest
 
 from ezray import Gap, Surface, SurfaceType, System

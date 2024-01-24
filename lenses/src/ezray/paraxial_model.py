@@ -133,12 +133,29 @@ class System:
         """Compute the ray transfer matrices for each surface."""
 
         rtms = []
-        for i, surface in enumerate(self.surfaces()[1:-1]):
-            n0 = self.gaps()[i].refractive_index
-            n1 = self.gaps()[i + 1].refractive_index
-            R = surface.radius_of_curvature
-            rtms.append(self.RTMs[surface.surface_type](n0, n1, R))
+        for gap_0, surface, gap_1 in self:
+            # Object surface
+            if gap_0 is None:
+                n0 = gap_1.refractive_index
+            else:
+                n0 = gap_0.refractive_index
 
-        # Append the image surface
+            # Image surface
+            if gap_1 is None:
+                n1 = gap_0.refractive_index
+            else:
+                n1 = gap_1.refractive_index
+
+            R = surface.radius_of_curvature
+
+            rtm = self.RTMs[surface.surface_type](n0, n1, R)
+            rtms.append(rtm)
+
+            # Append propagation matrix for the gap
+            if gap_1 is None:
+                # Image space; we're done.
+                break
+            else:
+                rtms.append(np.array([[1, gap_1.thickness], [0, 1]]))
 
         return rtms
