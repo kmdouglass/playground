@@ -2,18 +2,19 @@
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
-from typing import Callable, Iterable, Iterator, Optional
+from typing import Any, Callable, Iterable, Iterator, Optional
 
 import numpy as np
+from numpy.linalg import inv
 import numpy.typing as npt
 
 
 type Float = np.float64
 
 """A sequence of gaps and surfaces that is required at each ray tracing step."""
-type TracingStep = tuple[Gap, Surface, Optional[Gap]]
+type TracingStep = tuple[Optional[Gap], Surface, Optional[Gap]]
 
-DEFAULT_THICKNESS = 1.0
+DEFAULT_THICKNESS = 0.0
 
 
 """Types of surfaces.
@@ -54,19 +55,60 @@ TRANSFORMS: dict[
 }
 
 
-def transforms(steps: Iterable[TracingStep]) -> list[npt.NDArray[Float]]:
+"""Ray transfer matrices for each surface type in the reverse direction.
+
+See Also
+--------
+TRANSFORMS
+
+"""
+TRANSFORMS_REV: dict[
+    SurfaceType, Callable[[float, float, float, float], npt.NDArray[Float]]
+] = {
+    SurfaceType.IMAGE: lambda *_: np.array([[1, 0], [0, 1]]),
+    SurfaceType.OBJECT: lambda t, *_: np.array([[1, 0], [0, 1]])
+    @ np.array([[1, -t], [0, 1]]),
+    SurfaceType.REFRACTING: lambda t, R, n0, n1: inv(
+        np.array([[1, 0], [-(n0 - n1) / R / n1, n0 / n1]])
+    )
+    @ np.array([[1, -t], [0, 1]]),
+    SurfaceType.REFLECTING: lambda t, R, *_: inv(np.array([[1, 0], [2 / R, 1]]))
+    @ np.array([[1, -t], [0, 1]]),
+}
+
+
+def transforms(
+    steps: Iterable[TracingStep], reverse: bool = False
+) -> list[npt.NDArray[Float]]:
     """Compute the ray transfer matrices for each tracing step.
 
     In the case that the object space is of infinite extent, the first gap thickness is
     set to a default, finite value.
 
+    Parameters
+    ----------
+    steps : Iterable[TracingStep]
+        An iterable of ray tracing steps.
+    reverse : bool, optional
+        If True, the ray transfer matrices are computed for a ray trace in the reverse
+        direction. This is useful, for example, for computing the entrance pupil
+        location.
+
     """
+    if reverse:
+        steps = [
+            (gap_1, surface, gap_0) for gap_0, surface, gap_1 in reversed(list(steps))
+        ]
 
     txs = []
     for gap_0, surface, gap_1 in steps:
-        t = DEFAULT_THICKNESS if np.isinf(gap_0.thickness) else gap_0.thickness
+        t = (
+            DEFAULT_THICKNESS
+            if gap_0 is None or np.isinf(gap_0.thickness)
+            else gap_0.thickness
+        )
         R = surface.radius_of_curvature
-        n0 = gap_0.refractive_index
+        n0 = gap_1.refractive_index if gap_0 is None else gap_0.refractive_index
         n1 = gap_0.refractive_index if gap_1 is None else gap_1.refractive_index
 
         txs.append(TRANSFORMS[surface.surface_type](t, R, n0, n1))
@@ -76,7 +118,7 @@ def transforms(steps: Iterable[TracingStep]) -> list[npt.NDArray[Float]]:
 
 @dataclass(frozen=True)
 class Surface:
-    diameter: float
+    semi_diameter: float
     surface_type: SurfaceType
     radius_of_curvature: float = np.inf
 
@@ -85,6 +127,12 @@ class Surface:
 class Gap:
     refractive_index: float
     thickness: float
+
+
+@dataclass(frozen=True)
+class EntrancePupil:
+    location: float
+    semi_diameter: float
 
 
 @dataclass(frozen=True)
@@ -135,22 +183,33 @@ class System:
     def gaps(self) -> list[Gap]:
         return [element for element in self.model if isinstance(element, Gap)]
 
+    @cached_property
     def aperture_stop(self) -> int:
         """Returns the surface ID of the aperture stop.
 
-        The aperture stop is the surface that has the smallest ratio of diameter to ray
-        height. If there are multiple surfaces with the same ratio, the first surface
-        is returned.
+        The aperture stop is the surface that has the smallest ratio of semi-diameter
+        to ray height. If there are multiple surfaces with the same ratio, the first
+        surface is returned.
 
         """
         ray = self._construction_rays()
         results = trace(ray, self)
 
-        diameters = np.array([surface.diameter for surface in self.surfaces])
-        ratios = diameters / results[:, :, 0].T.ravel()
+        semi_diameters = np.array([surface.semi_diameter for surface in self.surfaces])
+        ratios = semi_diameters / results[:, :, 0].T.ravel()
 
         # Do not include the object or image surfaces when finding the minimum.
         return np.argmin(ratios[1:-1]) + 1
+
+    @cached_property
+    def entrance_pupil(self) -> EntrancePupil:
+        # Aperture stop is first surface
+        if self.aperture_stop == 1:
+            return EntrancePupil(0, self.surfaces[1].semi_diameter)
+
+        # Trace a ray from the aperture stop backwards through the system
+
+        raise NotImplementedError
 
     def _construction_rays(self) -> npt.NDArray[Float]:
         """Return rays for construction of the system."""
@@ -163,8 +222,7 @@ class System:
             return np.array([0.0, 1.0])
 
     def _is_obj_at_inf(self) -> bool:
-        gaps = self.gaps
-        return np.isinf(gaps[0].thickness)
+        return np.isinf(self.gaps[0].thickness)
 
 
 def trace(rays: npt.NDArray[Float], steps: Iterable[TracingStep]) -> npt.NDArray[Float]:
@@ -188,7 +246,7 @@ def trace(rays: npt.NDArray[Float], steps: Iterable[TracingStep]) -> npt.NDArray
     # Pre-allocate the results. Shape is M X N X 2, where M is the number of steps + 1
     # (for the object surface), N is the number of rays, and 2 is the ray height and
     # angle.
-    results = np.zeros((len(steps) + 1, rays.shape[0], 2))
+    results = np.empty((len(steps) + 1, rays.shape[0], 2))
     results[0] = rays
 
     # Trace the rays through the system.

@@ -8,4 +8,4 @@ def test_convexplano_lens():
     results = trace(rays, convexplano_lens)
 
     assert results.shape == (4, 1, 2)
-    assert convexplano_lens.aperture_stop() == 1
+    assert convexplano_lens.aperture_stop == 1
