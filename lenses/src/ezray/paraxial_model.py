@@ -15,7 +15,7 @@ type TracingStep = tuple[Gap, Surface, Optional[Gap]]
 
 """Types of surfaces.
 
-The surface type determines the ray transfer matrix used to propagate rays through the
+The surface type determines the ray transformation used to propagate rays through the
 surface.
 
 """
@@ -29,10 +29,16 @@ SurfaceType = Enum(
 
 This dictionary defines the mapping between a tracing step and the corresponding ray
 transformation. The surface type defines the form of the ray transfer matrix, and the
-parameters of the surface and gaps define the values of the matrix. 
+parameters of the surface and gaps define the values of the matrix.
+
+Note that each step is a product of the surface ray transfer matrix and the propagation
+matrix across the preceding gap. The object surface, being first, has no propagation
+matrix.
 
 """
-_RTMS: dict[SurfaceType, Callable[[float, float, float, float], npt.NDArray[Float]]] = {
+TRANSFORMS: dict[
+    SurfaceType, Callable[[float, float, float, float], npt.NDArray[Float]]
+] = {
     SurfaceType.IMAGE: lambda t, *_: np.array([[1, 0], [0, 1]])
     @ np.array([[1, t], [0, 1]]),
     SurfaceType.OBJECT: lambda *_: np.array([[1, 0], [0, 1]]),
@@ -45,7 +51,7 @@ _RTMS: dict[SurfaceType, Callable[[float, float, float, float], npt.NDArray[Floa
 }
 
 
-def _rtms(steps: Iterator[TracingStep]) -> list[npt.NDArray[Float]]:
+def transforms(steps: Iterable[TracingStep]) -> list[npt.NDArray[Float]]:
     """Compute the ray transfer matrices for each tracing step."""
 
     rtms = []
@@ -55,7 +61,7 @@ def _rtms(steps: Iterator[TracingStep]) -> list[npt.NDArray[Float]]:
         n0 = gap_0.refractive_index
         n1 = gap_0.refractive_index if gap_1 is None else gap_1.refractive_index
 
-        rtms.append(_RTMS[surface.surface_type](t, R, n0, n1))
+        rtms.append(TRANSFORMS[surface.surface_type](t, R, n0, n1))
 
     return rtms
 
@@ -139,9 +145,7 @@ class System:
         return np.isinf(gaps[0].thickness)
 
 
-def trace(
-    self, rays: npt.NDArray[Float], steps: Iterable[TracingStep]
-) -> npt.NDArray[Float]:
+def trace(rays: npt.NDArray[Float], steps: Iterable[TracingStep]) -> npt.NDArray[Float]:
     """Trace rays through a system.
 
     Parameters
@@ -152,14 +156,15 @@ def trace(
     """
 
     # Compute the ray transfer matrices for each step.
-    rtms = _rtms(steps)
+    steps = transforms(steps)
 
-    # Pre-allocate the results. Shape is M X N X 2, where M is the number of steps, N is
-    # the number of rays, and 2 is the ray height and angle.
-    results = np.zeros((len(rtms), rays.shape[0], 2))
+    # Pre-allocate the results. Shape is M X N X 2, where M is the number of steps, N
+    # is the number of rays, and 2 is the ray height and angle.
+    results = np.zeros((len(steps), rays.shape[0], 2))
 
     # Trace the rays through the system.
-    for rtm in rtms:
-        rays = rtm @ rays
+    for i, step in enumerate(steps):
+        rays = step @ rays
+        results[i] = rays
 
-    raise NotImplementedError
+    return results

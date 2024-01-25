@@ -1,1 +1,1 @@
-from .paraxial_model import Gap, Surface, SurfaceType, System
+from .paraxial_model import Gap, Surface, SurfaceType, System, trace  # noqa: F401
