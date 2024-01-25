@@ -1,6 +1,7 @@
 """Models for paraxial optics."""
 from dataclasses import dataclass
 from enum import Enum
+from functools import cached_property
 from typing import Callable, Iterable, Iterator, Optional
 
 import numpy as np
@@ -114,8 +115,8 @@ class System:
 
     def __iter__(self) -> Iterator[TracingStep]:
         """Return an iterator of tracing steps over the system model."""
-        surfaces = self.surfaces()
-        gaps = self.gaps()
+        surfaces = self.surfaces
+        gaps = self.gaps
 
         for i, surface in enumerate(surfaces):
             if i == 0:
@@ -126,15 +127,17 @@ class System:
             else:
                 yield gaps[i - 1], surface, gaps[i]
 
+    @cached_property
     def surfaces(self) -> list[Surface]:
         return [element for element in self.model if isinstance(element, Surface)]
 
+    @cached_property
     def gaps(self) -> list[Gap]:
         return [element for element in self.model if isinstance(element, Gap)]
 
     def aperture_stop(self) -> int:
         """Returns the surface ID of the aperture stop.
-        
+
         The aperture stop is the surface that has the smallest ratio of diameter to ray
         height. If there are multiple surfaces with the same ratio, the first surface
         is returned.
@@ -143,7 +146,7 @@ class System:
         ray = self._construction_rays()
         results = trace(ray, self)
 
-        diameters = np.array([surface.diameter for surface in self.surfaces()])
+        diameters = np.array([surface.diameter for surface in self.surfaces])
         ratios = diameters / results[:, :, 0].T.ravel()
 
         # Do not include the object or image surfaces when finding the minimum.
@@ -160,7 +163,7 @@ class System:
             return np.array([0.0, 1.0])
 
     def _is_obj_at_inf(self) -> bool:
-        gaps = self.gaps()
+        gaps = self.gaps
         return np.isinf(gaps[0].thickness)
 
 

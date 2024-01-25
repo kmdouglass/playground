@@ -131,7 +131,7 @@ def test_system_surfaces():
 
     system = System([surf_0, gap_0, surf_1, gap_1, surf_2])
 
-    assert system.surfaces() == [surf_0, surf_1, surf_2]
+    assert system.surfaces == [surf_0, surf_1, surf_2]
 
 
 def test_system_gaps():
@@ -151,7 +151,7 @@ def test_system_gaps():
 
     system = System([surf_0, gap_0, surf_1, gap_1, surf_2])
 
-    assert system.gaps() == [gap_0, gap_1]
+    assert system.gaps == [gap_0, gap_1]
 
 
 def test_system_model_iterator(convexplano_lens):
