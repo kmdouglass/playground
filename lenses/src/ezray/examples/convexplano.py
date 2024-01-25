@@ -11,7 +11,9 @@ model = System(
             radius_of_curvature=25.8,
             surface_type=SurfaceType.REFRACTING,
         ),
-        Gap(refractive_index=1.5, thickness=5.3),
+        Gap(refractive_index=1.515, thickness=5.3),
+        Surface(diameter=25, surface_type=SurfaceType.REFRACTING),
+        Gap(refractive_index=1.0, thickness=46.6),
         Surface(diameter=25, surface_type=SurfaceType.IMAGE),
     ]
 )

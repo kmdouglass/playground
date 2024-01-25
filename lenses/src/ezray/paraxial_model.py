@@ -12,6 +12,8 @@ type Float = np.float64
 """A sequence of gaps and surfaces that is required at each ray tracing step."""
 type TracingStep = tuple[Gap, Surface, Optional[Gap]]
 
+DEFAULT_THICKNESS = 1.0
+
 
 """Types of surfaces.
 
@@ -52,18 +54,23 @@ TRANSFORMS: dict[
 
 
 def transforms(steps: Iterable[TracingStep]) -> list[npt.NDArray[Float]]:
-    """Compute the ray transfer matrices for each tracing step."""
+    """Compute the ray transfer matrices for each tracing step.
 
-    rtms = []
+    In the case that the object space is of infinite extent, the first gap thickness is
+    set to a default, finite value.
+
+    """
+
+    txs = []
     for gap_0, surface, gap_1 in steps:
-        t = gap_0.thickness
+        t = DEFAULT_THICKNESS if np.isinf(gap_0.thickness) else gap_0.thickness
         R = surface.radius_of_curvature
         n0 = gap_0.refractive_index
         n1 = gap_0.refractive_index if gap_1 is None else gap_1.refractive_index
 
-        rtms.append(TRANSFORMS[surface.surface_type](t, R, n0, n1))
+        txs.append(TRANSFORMS[surface.surface_type](t, R, n0, n1))
 
-    return rtms
+    return txs
 
 
 @dataclass(frozen=True)
@@ -126,9 +133,21 @@ class System:
         return [element for element in self.model if isinstance(element, Gap)]
 
     def aperture_stop(self) -> int:
-        """Returns the surface ID of the aperture stop."""
+        """Returns the surface ID of the aperture stop.
+        
+        The aperture stop is the surface that has the smallest ratio of diameter to ray
+        height. If there are multiple surfaces with the same ratio, the first surface
+        is returned.
+
+        """
         ray = self._construction_rays()
-        raise NotImplementedError
+        results = trace(ray, self)
+
+        diameters = np.array([surface.diameter for surface in self.surfaces()])
+        ratios = diameters / results[:, :, 0].T.ravel()
+
+        # Do not include the object or image surfaces when finding the minimum.
+        return np.argmin(ratios[1:-1]) + 1
 
     def _construction_rays(self) -> npt.NDArray[Float]:
         """Return rays for construction of the system."""
@@ -153,18 +172,25 @@ def trace(rays: npt.NDArray[Float], steps: Iterable[TracingStep]) -> npt.NDArray
     rays : npt.NDArray[Float]
         Array of rays to trace through the system. Each row is a ray, and the
         columns are the ray height and angle.
+    steps : Iterable[TracingStep]
+        An iterable of tracing steps.
+
     """
+    # Ensure that the rays are a 2D array.
+    rays = np.atleast_2d(rays)
 
     # Compute the ray transfer matrices for each step.
     steps = transforms(steps)
 
-    # Pre-allocate the results. Shape is M X N X 2, where M is the number of steps, N
-    # is the number of rays, and 2 is the ray height and angle.
-    results = np.zeros((len(steps), rays.shape[0], 2))
+    # Pre-allocate the results. Shape is M X N X 2, where M is the number of steps + 1
+    # (for the object surface), N is the number of rays, and 2 is the ray height and
+    # angle.
+    results = np.zeros((len(steps) + 1, rays.shape[0], 2))
+    results[0] = rays
 
     # Trace the rays through the system.
     for i, step in enumerate(steps):
-        rays = step @ rays
-        results[i] = rays
+        rays = (step @ rays.T).T
+        results[i + 1] = rays
 
     return results
