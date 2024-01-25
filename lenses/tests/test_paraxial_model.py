@@ -16,7 +16,7 @@ def convexplano_lens():
     surf_1 = Surface(
         diameter=25,
         radius_of_curvature=-100,
-        surface_type=SurfaceType.REFRACTING_SPHERE,
+        surface_type=SurfaceType.REFRACTING,
     )
     gap_1 = Gap(refractive_index=1.5, thickness=100)
     surf_2 = Surface(
@@ -31,7 +31,7 @@ def test_system_model_first_element_not_surface():
     surf_1 = Surface(
         diameter=25,
         radius_of_curvature=25.8,
-        surface_type=SurfaceType.REFRACTING_SPHERE,
+        surface_type=SurfaceType.REFRACTING,
     )
     gap_1 = Gap(refractive_index=1.5, thickness=5.3)
     surf_2 = Surface(
@@ -44,13 +44,13 @@ def test_system_model_first_element_not_surface():
 
 def test_system_model_first_element_not_object_surface():
     surf_0 = Surface(
-        diameter=25, radius_of_curvature=inf, surface_type=SurfaceType.REFRACTING_SPHERE
+        diameter=25, radius_of_curvature=inf, surface_type=SurfaceType.REFRACTING
     )
     gap_0 = Gap(refractive_index=1.0, thickness=-inf)
     surf_1 = Surface(
         diameter=25,
         radius_of_curvature=25.8,
-        surface_type=SurfaceType.REFRACTING_SPHERE,
+        surface_type=SurfaceType.REFRACTING,
     )
     gap_1 = Gap(refractive_index=1.5, thickness=5.3)
     surf_2 = Surface(
@@ -69,7 +69,7 @@ def test_system_model_last_element_not_surface():
     surf_1 = Surface(
         diameter=25,
         radius_of_curvature=25.8,
-        surface_type=SurfaceType.REFRACTING_SPHERE,
+        surface_type=SurfaceType.REFRACTING,
     )
     gap_1 = Gap(refractive_index=1.5, thickness=5.3)
 
@@ -85,11 +85,11 @@ def test_system_model_last_element_not_image_surface():
     surf_1 = Surface(
         diameter=25,
         radius_of_curvature=25.8,
-        surface_type=SurfaceType.REFRACTING_SPHERE,
+        surface_type=SurfaceType.REFRACTING,
     )
     gap_1 = Gap(refractive_index=1.5, thickness=5.3)
     surf_2 = Surface(
-        diameter=25, radius_of_curvature=inf, surface_type=SurfaceType.REFRACTING_SPHERE
+        diameter=25, radius_of_curvature=inf, surface_type=SurfaceType.REFRACTING
     )
 
     with pytest.raises(TypeError):
@@ -104,7 +104,7 @@ def test_system_model_should_alternate_surfaces_and_gaps():
     surf_1 = Surface(
         diameter=25,
         radius_of_curvature=25.8,
-        surface_type=SurfaceType.REFRACTING_SPHERE,
+        surface_type=SurfaceType.REFRACTING,
     )
     surf_2 = Surface(
         diameter=25, radius_of_curvature=inf, surface_type=SurfaceType.IMAGE
@@ -122,7 +122,7 @@ def test_system_surfaces():
     surf_1 = Surface(
         diameter=25,
         radius_of_curvature=25.8,
-        surface_type=SurfaceType.REFRACTING_SPHERE,
+        surface_type=SurfaceType.REFRACTING,
     )
     gap_1 = Gap(refractive_index=1.5, thickness=5.3)
     surf_2 = Surface(
@@ -142,7 +142,7 @@ def test_system_gaps():
     surf_1 = Surface(
         diameter=25,
         radius_of_curvature=25.8,
-        surface_type=SurfaceType.REFRACTING_SPHERE,
+        surface_type=SurfaceType.REFRACTING,
     )
     gap_1 = Gap(refractive_index=1.5, thickness=5.3)
     surf_2 = Surface(
@@ -155,10 +155,9 @@ def test_system_gaps():
 
 
 def test_system_model_iterator(convexplano_lens):
-    """Test the iterator of the model, which returns (Optinal[Gap], Surface, Optional[Gap]) tuples."""
+    """Test the iterator of the model, which returns (Gap, Surface, Optional[Gap]) tuples."""
     results = list(convexplano_lens)
     assert results == [
-        (None, convexplano_lens.model[0], convexplano_lens.model[1]),
         (
             convexplano_lens.model[1],
             convexplano_lens.model[2],

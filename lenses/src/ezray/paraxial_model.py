@@ -1,13 +1,16 @@
 """Models for paraxial optics."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Iterator, Optional
+from typing import Callable, Iterable, Iterator, Optional
 
 import numpy as np
 import numpy.typing as npt
 
 
 type Float = np.float64
+
+"""A sequence of gaps and surfaces that is required at each ray tracing step."""
+type TracingStep = tuple[Gap, Surface, Optional[Gap]]
 
 
 """Types of surfaces.
@@ -18,8 +21,43 @@ surface.
 """
 SurfaceType = Enum(
     "SurfaceType",
-    "IMAGE OBJECT REFRACTING_FLAT REFRACTING_SPHERE REFLECTING_FLAT REFLECTING_SPHERE",
+    "IMAGE OBJECT REFRACTING REFLECTING",
 )
+
+
+"""Ray transfer matrices for each surface type.
+
+This dictionary defines the mapping between a tracing step and the corresponding ray
+transformation. The surface type defines the form of the ray transfer matrix, and the
+parameters of the surface and gaps define the values of the matrix. 
+
+"""
+_RTMS: dict[SurfaceType, Callable[[float, float, float, float], npt.NDArray[Float]]] = {
+    SurfaceType.IMAGE: lambda t, *_: np.array([[1, 0], [0, 1]])
+    @ np.array([[1, t], [0, 1]]),
+    SurfaceType.OBJECT: lambda *_: np.array([[1, 0], [0, 1]]),
+    SurfaceType.REFRACTING: lambda t, R, n0, n1: np.array(
+        [[1, 0], [(n0 - n1) / R / n1, n0 / n1]]
+    )
+    @ np.array([[1, t], [0, 1]]),
+    SurfaceType.REFLECTING: lambda t, R, *_: np.array([[1, 0], [-2 / R, 1]])
+    @ np.array([[1, t], [0, 1]]),
+}
+
+
+def _rtms(steps: Iterator[TracingStep]) -> list[npt.NDArray[Float]]:
+    """Compute the ray transfer matrices for each tracing step."""
+
+    rtms = []
+    for gap_0, surface, gap_1 in steps:
+        t = gap_0.thickness
+        R = surface.radius_of_curvature
+        n0 = gap_0.refractive_index
+        n1 = gap_0.refractive_index if gap_1 is None else gap_1.refractive_index
+
+        rtms.append(_RTMS[surface.surface_type](t, R, n0, n1))
+
+    return rtms
 
 
 @dataclass(frozen=True)
@@ -38,25 +76,6 @@ class Gap:
 @dataclass(frozen=True)
 class System:
     model: list[Surface | Gap]
-
-    RTMs: dict[
-        SurfaceType, Callable[[float, float, float], npt.NDArray[Float]]
-    ] = field(
-        default_factory=lambda: {
-            SurfaceType.IMAGE: lambda n0, n1, R: np.array([[1, 0], [0, 1]]),
-            SurfaceType.OBJECT: lambda n0, n1, R: np.array([[1, 0], [0, 1]]),
-            SurfaceType.REFRACTING_FLAT: lambda n0, n1, R: np.array(
-                [[1, 0], [0, n0 / n1]]
-            ),
-            SurfaceType.REFRACTING_SPHERE: lambda n0, n1, R: np.array(
-                [[1, 0], [(n0 - n1) / R / n1, n0 / n1]]
-            ),
-            SurfaceType.REFLECTING_FLAT: lambda n0, n1, R: np.array([[1, 0], [0, 1]]),
-            SurfaceType.REFLECTING_SPHERE: lambda n0, n1, R: np.array(
-                [[1, 0], [-2 / R, 1]]
-            ),
-        }
-    )
 
     def __post_init__(self):
         # Ensure that the first and last elements are object and image surfaces.
@@ -80,14 +99,15 @@ class System:
                 if not isinstance(element, Gap):
                     raise TypeError("Odd elements must be gaps.")
 
-    def __iter__(self) -> Iterator[tuple[Optional[Gap], Surface, Optional[Gap]]]:
-        """Iterate over the system model."""
+    def __iter__(self) -> Iterator[TracingStep]:
+        """Return an iterator of tracing steps over the system model."""
         surfaces = self.surfaces()
         gaps = self.gaps()
 
         for i, surface in enumerate(surfaces):
             if i == 0:
-                yield None, surface, gaps[i]
+                # Object space; skip the first gap.
+                continue
             elif i == len(surfaces) - 1:
                 yield gaps[i - 1], surface, None
             else:
@@ -104,17 +124,6 @@ class System:
         ray = self._construction_rays()
         raise NotImplementedError
 
-    def trace(self, rays: npt.NDArray[Float]) -> npt.NDArray[Float]:
-        """Trace rays through a system.
-
-        Parameters
-        ----------
-        rays : npt.NDArray[Float]
-            Array of rays to trace through the system. Each row is a ray, and the
-            columns are the ray height and angle.
-        """
-        raise NotImplementedError
-
     def _construction_rays(self) -> npt.NDArray[Float]:
         """Return rays for construction of the system."""
 
@@ -129,33 +138,28 @@ class System:
         gaps = self.gaps()
         return np.isinf(gaps[0].thickness)
 
-    def _rtms(self) -> list[npt.NDArray[Float]]:
-        """Compute the ray transfer matrices for each surface."""
 
-        rtms = []
-        for gap_0, surface, gap_1 in self:
-            # Object surface
-            if gap_0 is None:
-                n0 = gap_1.refractive_index
-            else:
-                n0 = gap_0.refractive_index
+def trace(
+    self, rays: npt.NDArray[Float], steps: Iterable[TracingStep]
+) -> npt.NDArray[Float]:
+    """Trace rays through a system.
 
-            # Image surface
-            if gap_1 is None:
-                n1 = gap_0.refractive_index
-            else:
-                n1 = gap_1.refractive_index
+    Parameters
+    ----------
+    rays : npt.NDArray[Float]
+        Array of rays to trace through the system. Each row is a ray, and the
+        columns are the ray height and angle.
+    """
 
-            R = surface.radius_of_curvature
+    # Compute the ray transfer matrices for each step.
+    rtms = _rtms(steps)
 
-            rtm = self.RTMs[surface.surface_type](n0, n1, R)
-            rtms.append(rtm)
+    # Pre-allocate the results. Shape is M X N X 2, where M is the number of steps, N is
+    # the number of rays, and 2 is the ray height and angle.
+    results = np.zeros((len(rtms), rays.shape[0], 2))
 
-            # Append propagation matrix for the gap
-            if gap_1 is None:
-                # Image space; we're done.
-                break
-            else:
-                rtms.append(np.array([[1, gap_1.thickness], [0, 1]]))
+    # Trace the rays through the system.
+    for rtm in rtms:
+        rays = rtm @ rays
 
-        return rtms
+    raise NotImplementedError
