@@ -69,8 +69,8 @@ def transforms(steps: Iterable[TracingStep]) -> list[npt.NDArray[Float]]:
 @dataclass(frozen=True)
 class Surface:
     diameter: float
-    radius_of_curvature: float
     surface_type: SurfaceType
+    radius_of_curvature: float = np.inf
 
 
 @dataclass(frozen=True)
