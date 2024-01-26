@@ -145,9 +145,8 @@ class System:
         results = self.pseudo_marginal_ray_trace
 
         semi_diameters = np.array([surface.semi_diameter for surface in self.surfaces])
-        ratios = semi_diameters / 2 / results[:, 0, 0].T
+        ratios = semi_diameters / results[:, 0, 0].T
 
-        # Do not include the object or image surfaces when finding the minimum.
         scale_factor = ratios[self.aperture_stop]
 
         return results[0, 0, :] * scale_factor
