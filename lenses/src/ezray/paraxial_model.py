@@ -1,4 +1,4 @@
-"""Models for paraxial optics."""
+"""Models for paraxial optical system design."""
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
@@ -8,112 +8,18 @@ import numpy as np
 from numpy.linalg import inv
 import numpy.typing as npt
 
-
-type Float = np.float64
-
-"""A sequence of gaps and surfaces that is required at each ray tracing step."""
-type TracingStep = tuple[Optional[Gap], Surface, Optional[Gap]]
-
-DEFAULT_THICKNESS = 0.0
-
-
-"""Types of surfaces.
-
-The surface type determines the ray transformation used to propagate rays through the
-surface.
-
-"""
-SurfaceType = Enum(
-    "SurfaceType",
-    "IMAGE OBJECT REFRACTING REFLECTING",
+from ezray.core.ray_tracing import (
+    DEFAULT_THICKNESS,
+    Float,
+    RayFactory,
+    SurfaceType,
+    TRANSFORMS,
+    TRANSFORMS_REV,
 )
 
 
-"""Ray transfer matrices for each surface type.
-
-This dictionary defines the mapping between a tracing step and the corresponding ray
-transformation. The surface type defines the form of the ray transfer matrix, and the
-parameters of the surface and gaps define the values of the matrix.
-
-Note that each step is a product of the surface ray transfer matrix and the propagation
-matrix across the preceding gap. The object surface, being first, has no propagation
-matrix.
-
-"""
-TRANSFORMS: dict[
-    SurfaceType, Callable[[float, float, float, float], npt.NDArray[Float]]
-] = {
-    SurfaceType.IMAGE: lambda t, *_: np.array([[1, 0], [0, 1]])
-    @ np.array([[1, t], [0, 1]]),
-    SurfaceType.OBJECT: lambda *_: np.array([[1, 0], [0, 1]]),
-    SurfaceType.REFRACTING: lambda t, R, n0, n1: np.array(
-        [[1, 0], [(n0 - n1) / R / n1, n0 / n1]]
-    )
-    @ np.array([[1, t], [0, 1]]),
-    SurfaceType.REFLECTING: lambda t, R, *_: np.array([[1, 0], [-2 / R, 1]])
-    @ np.array([[1, t], [0, 1]]),
-}
-
-
-"""Ray transfer matrices for each surface type in the reverse direction.
-
-See Also
---------
-TRANSFORMS
-
-"""
-TRANSFORMS_REV: dict[
-    SurfaceType, Callable[[float, float, float, float], npt.NDArray[Float]]
-] = {
-    SurfaceType.IMAGE: lambda *_: np.array([[1, 0], [0, 1]]),
-    SurfaceType.OBJECT: lambda t, *_: np.array([[1, 0], [0, 1]])
-    @ np.array([[1, -t], [0, 1]]),
-    SurfaceType.REFRACTING: lambda t, R, n0, n1: inv(
-        np.array([[1, 0], [-(n0 - n1) / R / n1, n0 / n1]])
-    )
-    @ np.array([[1, -t], [0, 1]]),
-    SurfaceType.REFLECTING: lambda t, R, *_: inv(np.array([[1, 0], [2 / R, 1]]))
-    @ np.array([[1, -t], [0, 1]]),
-}
-
-
-def transforms(
-    steps: Iterable[TracingStep], reverse: bool = False
-) -> list[npt.NDArray[Float]]:
-    """Compute the ray transfer matrices for each tracing step.
-
-    In the case that the object space is of infinite extent, the first gap thickness is
-    set to a default, finite value.
-
-    Parameters
-    ----------
-    steps : Iterable[TracingStep]
-        An iterable of ray tracing steps.
-    reverse : bool, optional
-        If True, the ray transfer matrices are computed for a ray trace in the reverse
-        direction. This is useful, for example, for computing the entrance pupil
-        location.
-
-    """
-    if reverse:
-        steps = [
-            (gap_1, surface, gap_0) for gap_0, surface, gap_1 in reversed(list(steps))
-        ]
-
-    txs = []
-    for gap_0, surface, gap_1 in steps:
-        t = (
-            DEFAULT_THICKNESS
-            if gap_0 is None or np.isinf(gap_0.thickness)
-            else gap_0.thickness
-        )
-        R = surface.radius_of_curvature
-        n0 = gap_1.refractive_index if gap_0 is None else gap_0.refractive_index
-        n1 = gap_0.refractive_index if gap_1 is None else gap_1.refractive_index
-
-        txs.append(TRANSFORMS[surface.surface_type](t, R, n0, n1))
-
-    return txs
+"""A sequence of gaps and surfaces that is required at each ray tracing step."""
+type TracingStep = tuple[Optional[Gap], Surface, Optional[Gap]]
 
 
 @dataclass(frozen=True)
@@ -161,6 +67,15 @@ class System:
                 if not isinstance(element, Gap):
                     raise TypeError("Odd elements must be gaps.")
 
+    def __getitem__(self, key: Any) -> TracingStep:
+        """Return a tracing step for a given surface ID."""
+        if isinstance(key, int):
+            return tuple(self)[key]
+        elif isinstance(key, slice):
+            return tuple(self)[key.start : key.stop : key.step]
+        else:
+            raise TypeError("Key must be an integer or slice.")
+
     def __iter__(self) -> Iterator[TracingStep]:
         """Return an iterator of tracing steps over the system model."""
         surfaces = self.surfaces
@@ -174,15 +89,6 @@ class System:
                 yield gaps[i - 1], surface, None
             else:
                 yield gaps[i - 1], surface, gaps[i]
-
-    def __getitem__(self, key: Any) -> TracingStep:
-        """Return a tracing step for a given surface ID."""
-        if isinstance(key, int):
-            return tuple(self)[key]
-        elif isinstance(key, slice):
-            return tuple(self)[key.start : key.stop : key.step]
-        else:
-            raise TypeError("Key must be an integer or slice.")
 
     def __len__(self) -> int:
         """Return the number of tracing steps in the system."""
@@ -221,7 +127,12 @@ class System:
             return EntrancePupil(0, self.surfaces[1].semi_diameter)
 
         # Trace a ray from the aperture stop backwards through the system
-        # TODO implement __getitem__ to get slices?
+        steps = self[: self.aperture_stop]
+        ray = RayFactory.ray(height=0.0, angle=1.0)
+
+        results = trace(ray, steps, reverse=True)
+
+        # TODO Implement a method to find the intersection with the optical axis
 
         raise NotImplementedError
 
@@ -239,7 +150,51 @@ class System:
         return np.isinf(self.gaps[0].thickness)
 
 
-def trace(rays: npt.NDArray[Float], steps: Iterable[TracingStep]) -> npt.NDArray[Float]:
+def transforms(
+    steps: Iterable[TracingStep], reverse: bool = False
+) -> list[npt.NDArray[Float]]:
+    """Compute the ray transfer matrices for each tracing step.
+
+    In the case that the object space is of infinite extent, the first gap thickness is
+    set to a default, finite value.
+
+    Parameters
+    ----------
+    steps : Iterable[TracingStep]
+        An iterable of ray tracing steps.
+    reverse : bool, optional
+        If True, the ray transfer matrices are computed for a ray trace in the reverse
+        direction. This is useful, for example, for computing the entrance pupil
+        location.
+
+    """
+    if reverse:
+        steps = [
+            (gap_1, surface, gap_0) for gap_0, surface, gap_1 in reversed(tuple(steps))
+        ]
+
+    txs = []
+    for gap_0, surface, gap_1 in steps:
+        t = (
+            DEFAULT_THICKNESS
+            if gap_0 is None or np.isinf(gap_0.thickness)
+            else gap_0.thickness
+        )
+        R = surface.radius_of_curvature
+        n0 = gap_1.refractive_index if gap_0 is None else gap_0.refractive_index
+        n1 = gap_0.refractive_index if gap_1 is None else gap_1.refractive_index
+
+        if reverse:
+            txs.append(TRANSFORMS_REV[surface.surface_type](t, R, n0, n1))
+        else:
+            txs.append(TRANSFORMS[surface.surface_type](t, R, n0, n1))
+
+    return txs
+
+
+def trace(
+    rays: npt.NDArray[Float], steps: Iterable[TracingStep], reverse=False
+) -> npt.NDArray[Float]:
     """Trace rays through a system.
 
     Parameters
@@ -249,23 +204,26 @@ def trace(rays: npt.NDArray[Float], steps: Iterable[TracingStep]) -> npt.NDArray
         columns are the ray height and angle.
     steps : Iterable[TracingStep]
         An iterable of tracing steps.
+    reverse : bool, optional
+        If True, the rays are traced in the reverse direction. This is useful, for
+        example, for computing the entrance pupil location.
 
     """
     # Ensure that the rays are a 2D array.
     rays = np.atleast_2d(rays)
 
     # Compute the ray transfer matrices for each step.
-    steps = transforms(steps)
+    txs = transforms(steps, reverse=reverse)
 
     # Pre-allocate the results. Shape is M X N X 2, where M is the number of steps + 1
-    # (for the object surface), N is the number of rays, and 2 is the ray height and
+    # (for the initial surface), N is the number of rays, and 2 is the ray height and
     # angle.
-    results = np.empty((len(steps) + 1, rays.shape[0], 2))
+    results = np.empty((len(txs) + 1, rays.shape[0], 2))
     results[0] = rays
 
     # Trace the rays through the system.
-    for i, step in enumerate(steps):
-        rays = (step @ rays.T).T
+    for i, tx in enumerate(txs):
+        rays = (tx @ rays.T).T
         results[i + 1] = rays
 
     return results
