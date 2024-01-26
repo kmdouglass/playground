@@ -178,6 +178,25 @@ def test_system_model_iterator(convexplano_lens):
         assert isinstance(result[2], Gap) or result[2] is None
 
 
+def test_system_model_get_item(convexplano_lens):
+    """Test the __getitem__ method of the model."""
+    assert convexplano_lens[0] == (
+        convexplano_lens.model[1],
+        convexplano_lens.model[2],
+        convexplano_lens.model[3],
+    )
+    assert convexplano_lens[1] == (
+        convexplano_lens.model[3],
+        convexplano_lens.model[4],
+        convexplano_lens.model[5],
+    )
+    assert convexplano_lens[2] == (
+        convexplano_lens.model[5],
+        convexplano_lens.model[6],
+        None,
+    )
+
+
 def test_transforms(convexplano_lens):
     """Test the transforms of the model."""
     results = transforms(convexplano_lens)

@@ -175,6 +175,19 @@ class System:
             else:
                 yield gaps[i - 1], surface, gaps[i]
 
+    def __getitem__(self, key: Any) -> TracingStep:
+        """Return a tracing step for a given surface ID."""
+        if isinstance(key, int):
+            return tuple(self)[key]
+        elif isinstance(key, slice):
+            return tuple(self)[key.start : key.stop : key.step]
+        else:
+            raise TypeError("Key must be an integer or slice.")
+
+    def __len__(self) -> int:
+        """Return the number of tracing steps in the system."""
+        return len(self.surfaces) - 1
+
     @cached_property
     def surfaces(self) -> list[Surface]:
         return [element for element in self.model if isinstance(element, Surface)]
@@ -208,6 +221,7 @@ class System:
             return EntrancePupil(0, self.surfaces[1].semi_diameter)
 
         # Trace a ray from the aperture stop backwards through the system
+        # TODO implement __getitem__ to get slices?
 
         raise NotImplementedError
 
