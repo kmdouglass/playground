@@ -11,6 +11,7 @@ import numpy.typing as npt
 from ezray.core.ray_tracing import (
     DEFAULT_THICKNESS,
     Float,
+    propagate,
     RayFactory,
     SurfaceType,
     TRANSFORMS,
@@ -133,10 +134,10 @@ class System:
         results = trace(ray, steps, reverse=True)
 
         location = z_intercept(results[-1])  # Relative to the first surface
-        raise NotImplementedError
-        semi_diameter = (
-            results[-1, 0, 0] / self.surfaces[self.aperture_stop].semi_diameter
-        )  # Ratio of marginal ray heights at the aperture stop and object surface
+
+        # Propagate marginal ray to the entrance pupil
+        distance = location if self._is_obj_at_inf else self.gaps[0].thickness + location
+        semi_diameter = propagate(self.marginal_ray, distance)[0, 0]
 
         return EntrancePupil(location, semi_diameter)
 
