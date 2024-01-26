@@ -81,3 +81,15 @@ TRANSFORMS_REV: dict[
     SurfaceType.REFLECTING: lambda t, R, *_: inv(np.array([[1, 0], [2 / R, 1]]))
     @ np.array([[1, -t], [0, 1]]),
 }
+
+
+def z_intercept(rays: npt.NDArray[Float]) -> npt.NDArray[Float]:
+    """Return the intercept of the rays with the z-axis.
+
+    The intercept is the distance from the ray to the intercept, i.e. the origin is
+    assumed to be at the ray.
+
+    """
+    rays = np.atleast_2d(rays)
+
+    return -rays[:, 0] / rays[:, 1]

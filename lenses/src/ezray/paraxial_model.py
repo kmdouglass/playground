@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
-from typing import Any, Callable, Iterable, Iterator, Optional
+from typing import Any, Iterable, Iterator, Optional
 
 import numpy as np
 from numpy.linalg import inv
@@ -15,6 +15,7 @@ from ezray.core.ray_tracing import (
     SurfaceType,
     TRANSFORMS,
     TRANSFORMS_REV,
+    z_intercept,
 )
 
 
@@ -111,11 +112,10 @@ class System:
         surface is returned.
 
         """
-        ray = self._construction_rays()
-        results = trace(ray, self)
+        results = self.pseudo_marginal_ray_trace
 
         semi_diameters = np.array([surface.semi_diameter for surface in self.surfaces])
-        ratios = semi_diameters / results[:, :, 0].T.ravel()
+        ratios = semi_diameters / results[:, 0, 0].T
 
         # Do not include the object or image surfaces when finding the minimum.
         return np.argmin(ratios[1:-1]) + 1
@@ -132,19 +132,38 @@ class System:
 
         results = trace(ray, steps, reverse=True)
 
-        # TODO Implement a method to find the intersection with the optical axis
-
+        location = z_intercept(results[-1])  # Relative to the first surface
         raise NotImplementedError
+        semi_diameter = (
+            results[-1, 0, 0] / self.surfaces[self.aperture_stop].semi_diameter
+        )  # Ratio of marginal ray heights at the aperture stop and object surface
 
-    def _construction_rays(self) -> npt.NDArray[Float]:
-        """Return rays for construction of the system."""
+        return EntrancePupil(location, semi_diameter)
+
+    @cached_property
+    def marginal_ray(self) -> npt.NDArray[Float]:
+        results = self.pseudo_marginal_ray_trace
+
+        semi_diameters = np.array([surface.semi_diameter for surface in self.surfaces])
+        ratios = semi_diameters / 2 / results[:, 0, 0].T
+
+        # Do not include the object or image surfaces when finding the minimum.
+        scale_factor = ratios[self.aperture_stop]
+
+        return results[0, 0, :] * scale_factor
+
+    @cached_property
+    def pseudo_marginal_ray_trace(self) -> npt.NDArray[Float]:
+        """Traces a pseudo-marginal ray through the system."""
 
         if self._is_obj_at_inf:
             # Ray parallel to the optical axis at a distance of 1.
-            return np.array([1.0, 0.0])
+            ray = RayFactory.ray(height=1.0, angle=0.0)
         else:
             # Ray originating at the optical axis at an angle of 1.
-            return np.array([0.0, 1.0])
+            ray = RayFactory.ray(height=0.0, angle=1.0)
+
+        return trace(ray, self)
 
     def _is_obj_at_inf(self) -> bool:
         return np.isinf(self.gaps[0].thickness)
