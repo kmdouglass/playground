@@ -27,9 +27,14 @@ model = System(
 
 SPECS = {
     "aperture_stop": 1,
-    "back_focal_distance": 46.60170,
+    "back_focal_length": 46.59874,
     "entrance_pupil": EntrancePupil(location=0.0, semi_diameter=12.5),
     "marginal_ray": np.array(
-        [[[12.50000, 0]], [[12.50000, -0.16469]], [[11.62713, -0.24950]], [[0, -0.24950]]]
+        [
+            [[12.50000, 0]],
+            [[12.50000, -0.16469]],
+            [[11.62713, -0.24950]],
+            [[0, -0.24950]],
+        ]
     ),
 }

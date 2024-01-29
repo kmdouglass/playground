@@ -123,6 +123,14 @@ class System:
         return np.argmin(ratios[1:-1]) + 1
 
     @cached_property
+    def back_focal_length(self) -> float:
+        """Returns the back focal length of the system."""
+        results = self.infinity_ray
+
+        bfl = z_intercept(results[-2])[0]
+        return bfl
+
+    @cached_property
     def entrance_pupil(self) -> EntrancePupil:
         # Aperture stop is first surface
         if self.aperture_stop == 1:
@@ -147,7 +155,7 @@ class System:
     @cached_property
     def marginal_ray(self) -> RayTraceResults:
         """Returns the marginal ray through the system.
-        
+
         By convention, the number of rays Nr is 1.
 
         """
@@ -170,6 +178,17 @@ class System:
         else:
             # Ray originating at the optical axis at an angle of 1.
             ray = RayFactory.ray(height=0.0, angle=1.0)
+
+        return trace(ray, self)
+
+    @cached_property
+    def infinity_ray(self) -> RayTraceResults:
+        """An off-axis ray from infinity traced through the system.
+
+        This is the same as the pseudo marginal ray if the object is at infinity.
+
+        """
+        ray = RayFactory.ray(height=1.0, angle=0.0)
 
         return trace(ray, self)
 
