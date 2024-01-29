@@ -1,1 +1,8 @@
-from .paraxial_model import Gap, Surface, SurfaceType, System, trace  # noqa: F401
+from .paraxial_model import (
+    EntrancePupil,
+    Gap,
+    Surface,
+    SurfaceType,
+    System,
+    trace,
+)  # noqa: F401

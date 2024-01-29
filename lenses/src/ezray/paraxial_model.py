@@ -136,7 +136,9 @@ class System:
         location = z_intercept(results[-1])  # Relative to the first surface
 
         # Propagate marginal ray to the entrance pupil
-        distance = location if self._is_obj_at_inf else self.gaps[0].thickness + location
+        distance = (
+            location if self._is_obj_at_inf else self.gaps[0].thickness + location
+        )
         semi_diameter = propagate(self.marginal_ray, distance)[0, 0]
 
         return EntrancePupil(location, semi_diameter)
