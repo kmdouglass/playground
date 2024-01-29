@@ -28,6 +28,7 @@ model = System(
 SPECS = {
     "aperture_stop": 1,
     "back_focal_length": 46.59874,
+    "effective_focal_length": 50.097,
     "entrance_pupil": EntrancePupil(location=0.0, semi_diameter=12.5),
     "marginal_ray": np.array(
         [

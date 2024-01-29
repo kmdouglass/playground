@@ -7,8 +7,7 @@ import numpy as np
 ATOL = 1e-3
 
 
-def test_trace_convexplano_lens():
-    """Test the Convexplano lens."""
+def test_trace():
     rays = model.marginal_ray[0]
     results = trace(rays, model)
 
@@ -21,6 +20,12 @@ def test_aperture_stop():
 
 def test_back_focal_length():
     assert np.allclose(model.back_focal_length, SPECS["back_focal_length"], atol=ATOL)
+
+
+def test_effective_focal_length():
+    assert np.allclose(
+        model.effective_focal_length, SPECS["effective_focal_length"], atol=ATOL
+    )
 
 
 def test_entrance_pupil():
