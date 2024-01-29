@@ -9,6 +9,15 @@ from numpy.linalg import inv
 
 type Float = np.float64
 
+"""A Ns x Nr x 2 array of ray trace results.
+
+Ns is the number of surfaces, and Nr is the number of rays. The first column is the
+height of the ray at the surface, and the second column is the angle of the ray at the
+surface.
+
+"""
+type RayTraceResults = npt.NDArray[Float]
+
 
 """The thickness to assign a gap that is either None or infinite."""
 DEFAULT_THICKNESS = 0.0

@@ -1,3 +1,5 @@
+.vscode/
+
 # pytest-benchmark
 .benchmarks/
 

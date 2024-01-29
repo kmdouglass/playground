@@ -13,6 +13,7 @@ from ezray.core.ray_tracing import (
     Float,
     propagate,
     RayFactory,
+    RayTraceResults,
     SurfaceType,
     TRANSFORMS,
     TRANSFORMS_REV,
@@ -113,7 +114,7 @@ class System:
         surface is returned.
 
         """
-        results = self.pseudo_marginal_ray_trace
+        results = self.pseudo_marginal_ray
 
         semi_diameters = np.array([surface.semi_diameter for surface in self.surfaces])
         ratios = semi_diameters / results[:, 0, 0].T
@@ -139,23 +140,28 @@ class System:
         distance = (
             location if self._is_obj_at_inf else self.gaps[0].thickness + location
         )
-        semi_diameter = propagate(self.marginal_ray, distance)[0, 0]
+        semi_diameter = propagate(self.marginal_ray[0, 0, :], distance)[0, 0]
 
         return EntrancePupil(location, semi_diameter)
 
     @cached_property
-    def marginal_ray(self) -> npt.NDArray[Float]:
-        results = self.pseudo_marginal_ray_trace
+    def marginal_ray(self) -> RayTraceResults:
+        """Returns the marginal ray through the system.
+        
+        By convention, the number of rays Nr is 1.
+
+        """
+        pmr = self.pseudo_marginal_ray
 
         semi_diameters = np.array([surface.semi_diameter for surface in self.surfaces])
-        ratios = semi_diameters / results[:, 0, 0].T
+        ratios = semi_diameters / pmr[:, 0, 0].T
 
         scale_factor = ratios[self.aperture_stop]
 
-        return results[0, 0, :] * scale_factor
+        return pmr * scale_factor
 
     @cached_property
-    def pseudo_marginal_ray_trace(self) -> npt.NDArray[Float]:
+    def pseudo_marginal_ray(self) -> RayTraceResults:
         """Traces a pseudo-marginal ray through the system."""
 
         if self._is_obj_at_inf:
@@ -236,9 +242,8 @@ def trace(
     # Compute the ray transfer matrices for each step.
     txs = transforms(steps, reverse=reverse)
 
-    # Pre-allocate the results. Shape is M X N X 2, where M is the number of steps + 1
-    # (for the initial surface), N is the number of rays, and 2 is the ray height and
-    # angle.
+    # Pre-allocate the results. Shape is Ns X Nr X 2, where Ns is the number of
+    # surfaces, Nr is the number of rays, and 2 is the ray height and angle.
     results = np.empty((len(txs) + 1, rays.shape[0], 2))
     results[0] = rays
 
