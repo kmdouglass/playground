@@ -106,7 +106,7 @@ def z_intercept(rays: npt.NDArray[Float]) -> npt.NDArray[Float]:
 
 def propagate(rays: npt.NDArray[Float], distance: float) -> npt.NDArray[Float]:
     """Propagate rays a distance along the optical axis."""
-    rays = np.atleast_2d(rays)
-    rays[:, 0] += distance * rays[:, 1]
+    new_rays = np.atleast_2d(rays.copy())  # Copy to avoid modifying the input array.
+    new_rays[:, 0] += distance * new_rays[:, 1]
 
-    return rays
+    return new_rays

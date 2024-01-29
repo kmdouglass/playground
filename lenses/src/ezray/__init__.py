@@ -1,8 +1,9 @@
 from .paraxial_model import (
     EntrancePupil,
+    ExitPupil,
     Gap,
     Surface,
     SurfaceType,
-    System,
+    SequentialModel,
     trace,
 )  # noqa: F401

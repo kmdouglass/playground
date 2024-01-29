@@ -5,7 +5,6 @@ from functools import cached_property
 from typing import Any, Iterable, Iterator, Optional
 
 import numpy as np
-from numpy.linalg import inv
 import numpy.typing as npt
 
 from ezray.core.ray_tracing import (
@@ -43,9 +42,23 @@ class EntrancePupil:
     location: float
     semi_diameter: float
 
+    def __post_init__(self):
+        if self.semi_diameter <= 0:
+            raise ValueError("Semi-diameter must be positive.")
+
 
 @dataclass(frozen=True)
-class System:
+class ExitPupil:
+    location: float
+    semi_diameter: float
+
+    def __post_init__(self):
+        if self.semi_diameter <= 0:
+            raise ValueError("Semi-diameter must be positive.")
+
+
+@dataclass(frozen=True)
+class SequentialModel:
     model: list[Surface | Gap]
 
     def __post_init__(self):
@@ -96,6 +109,9 @@ class System:
     def __len__(self) -> int:
         """Return the number of tracing steps in the system."""
         return len(self.surfaces) - 1
+
+    def _is_obj_at_inf(self) -> bool:
+        return np.isinf(self.gaps[0].thickness)
 
     @cached_property
     def surfaces(self) -> list[Surface]:
@@ -161,7 +177,29 @@ class System:
         semi_diameter = propagate(self.marginal_ray[0, 0, :], distance)[0, 0]
 
         return EntrancePupil(location, semi_diameter)
-    
+
+    @cached_property
+    def exit_pupil(self) -> ExitPupil:
+        z_last_surface = self.z_coordinate(len(self.surfaces) - 2)
+
+        # Aperture stop is last non-image plane surface.
+        if self.aperture_stop == len(self.surfaces) - 2:
+            return ExitPupil(z_last_surface, self.surfaces[-2].semi_diameter)
+
+        # Trace a ray from the aperture stop forwards through the system
+        steps = self[self.aperture_stop - 1 :]
+        ray = RayFactory.ray(height=0.0, angle=1.0)
+
+        results = trace(ray, steps)
+
+        # Propagate marginal ray to the exit pupil
+        distance = z_intercept(results[-2])  # Relative to the last surface
+        semi_diameter = propagate(self.marginal_ray[-2, 0, :], distance)[0, 0]
+
+        location = z_last_surface + distance
+
+        return ExitPupil(location, semi_diameter)
+
     @cached_property
     def infinity_ray(self) -> RayTraceResults:
         """An off-axis ray from infinity traced through the system.
@@ -202,8 +240,29 @@ class System:
 
         return trace(ray, self)
 
-    def _is_obj_at_inf(self) -> bool:
-        return np.isinf(self.gaps[0].thickness)
+    @cached_property
+    def rear_principal_plane(self) -> float:
+        """Returns the z-coordinate of the rear principal plane."""
+
+        delta = self.back_focal_length - self.effective_focal_length
+
+        # Compute the z-position of the last surface before the image plane.
+        z = self.z_coordinate(len(self.surfaces) - 2)
+
+        return z + delta
+
+    def z_coordinate(self, surface_id: int) -> float:
+        """Returns the z-coordinate of a surface.
+
+        The origin is at the first surface.
+
+        """
+        if surface_id == 0 and np.isinf(self.gaps[0].thickness):
+            return -np.inf
+        if surface_id == 1:
+            return 0.0
+
+        return sum(gap.thickness for gap in self.gaps[1:surface_id])
 
 
 def transforms(

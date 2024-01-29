@@ -29,8 +29,30 @@ def test_effective_focal_length():
 
 
 def test_entrance_pupil():
-    assert model.entrance_pupil == SPECS["entrance_pupil"]
+    assert np.allclose(
+        model.entrance_pupil.location, SPECS["entrance_pupil"].location, atol=ATOL
+    )
+    assert np.allclose(
+        model.entrance_pupil.semi_diameter,
+        SPECS["entrance_pupil"].semi_diameter,
+        atol=ATOL,
+    )
+
+
+def test_exit_pupil():
+    assert np.allclose(
+        model.exit_pupil.location, SPECS["exit_pupil"].location, atol=ATOL
+    )
+    assert np.allclose(
+        model.exit_pupil.semi_diameter, SPECS["exit_pupil"].semi_diameter, atol=ATOL
+    )
 
 
 def test_marginal_ray():
     assert np.allclose(model.marginal_ray, SPECS["marginal_ray"], atol=ATOL)
+
+
+def test_rear_principal_plane():
+    assert np.allclose(
+        model.rear_principal_plane, SPECS["rear_principal_plane"], atol=ATOL
+    )
