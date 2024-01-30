@@ -48,6 +48,16 @@ def test_exit_pupil():
     )
 
 
+def test_front_focal_length():
+    assert np.allclose(model.front_focal_length, SPECS["front_focal_length"], atol=ATOL)
+
+
+def test_front_principal_plane():
+    assert np.allclose(
+        model.front_principal_plane, SPECS["front_principal_plane"], atol=ATOL
+    )
+
+
 def test_marginal_ray():
     assert np.allclose(model.marginal_ray, SPECS["marginal_ray"], atol=ATOL)
 

@@ -141,7 +141,7 @@ class SequentialModel:
     @cached_property
     def back_focal_length(self) -> float:
         """Returns the back focal length of the system."""
-        results = self.infinity_ray
+        results = self.focal_ray
 
         bfl = z_intercept(results[-2])[0]
         return bfl
@@ -149,7 +149,7 @@ class SequentialModel:
     @cached_property
     def effective_focal_length(self) -> float:
         """Returns the effective focal length of the system."""
-        results = self.infinity_ray
+        results = self.focal_ray
 
         y_1 = results[1, 0, 0]
         u_final = results[-2, 0, 1]
@@ -201,12 +201,24 @@ class SequentialModel:
         return ExitPupil(location, semi_diameter)
 
     @cached_property
-    def infinity_ray(self) -> RayTraceResults:
-        """An off-axis ray from infinity traced through the system.
+    def front_focal_length(self) -> float:
+        """Returns the front focal length of the system."""
+        results = self.reversed_focal_ray
 
-        This is the same as the pseudo marginal ray if the object is at infinity.
+        # negative sign because the ray is traced in the reverse direction
+        ffl = -z_intercept(results[-1])[0]
+        return ffl
 
-        """
+    @cached_property
+    def front_principal_plane(self) -> float:
+        """Returns the z-coordinate of the front principal plane."""
+
+        return self.front_focal_length + self.effective_focal_length
+
+    @cached_property
+    def focal_ray(self) -> RayTraceResults:
+        """A ray used to compute back focal lengths."""
+        # Ray parallel to the optical axis at a height of 1.
         ray = RayFactory.ray(height=1.0, angle=0.0)
 
         return trace(ray, self)
@@ -250,6 +262,14 @@ class SequentialModel:
         z = self.z_coordinate(len(self.surfaces) - 2)
 
         return z + delta
+
+    @cached_property
+    def reversed_focal_ray(self) -> RayTraceResults:
+        """A ray used to compute front focal lengths."""
+        # Ray parallel to the optical axis at a height of 1.
+        ray = RayFactory.ray(height=1.0, angle=0.0)
+
+        return trace(ray, self, reverse=True)
 
     def z_coordinate(self, surface_id: int) -> float:
         """Returns the z-coordinate of a surface.

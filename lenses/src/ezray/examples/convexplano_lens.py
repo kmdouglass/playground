@@ -31,6 +31,8 @@ SPECS = {
     "effective_focal_length": 50.097,
     "entrance_pupil": EntrancePupil(location=0.0, semi_diameter=12.5),
     "exit_pupil": ExitPupil(location=1.80165, semi_diameter=12.5),
+    "front_focal_length": -50.097,
+    "front_principal_plane": 0.0,
     "marginal_ray": np.array(
         [
             [[12.50000, 0]],
