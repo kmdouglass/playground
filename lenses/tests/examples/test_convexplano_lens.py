@@ -22,6 +22,12 @@ def test_back_focal_length():
     assert np.allclose(model.back_focal_length, SPECS["back_focal_length"], atol=ATOL)
 
 
+def test_back_principal_plane():
+    assert np.allclose(
+        model.back_principal_plane, SPECS["back_principal_plane"], atol=ATOL
+    )
+
+
 def test_effective_focal_length():
     assert np.allclose(
         model.effective_focal_length, SPECS["effective_focal_length"], atol=ATOL
@@ -60,9 +66,3 @@ def test_front_principal_plane():
 
 def test_marginal_ray():
     assert np.allclose(model.marginal_ray, SPECS["marginal_ray"], atol=ATOL)
-
-
-def test_rear_principal_plane():
-    assert np.allclose(
-        model.rear_principal_plane, SPECS["rear_principal_plane"], atol=ATOL
-    )

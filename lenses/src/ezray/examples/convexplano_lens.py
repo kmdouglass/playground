@@ -28,6 +28,7 @@ model = SequentialModel(
 SPECS = {
     "aperture_stop": 1,
     "back_focal_length": 46.59874,
+    "back_principal_plane": 1.80174,
     "effective_focal_length": 50.097,
     "entrance_pupil": EntrancePupil(location=0.0, semi_diameter=12.5),
     "exit_pupil": ExitPupil(location=1.80165, semi_diameter=12.5),
@@ -41,5 +42,4 @@ SPECS = {
             [[0, -0.24950]],
         ]
     ),
-    "rear_principal_plane": 1.80174,
 }

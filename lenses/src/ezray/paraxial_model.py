@@ -147,6 +147,17 @@ class SequentialModel:
         return bfl
 
     @cached_property
+    def back_principal_plane(self) -> float:
+        """Returns the z-coordinate of the rear principal plane."""
+
+        delta = self.back_focal_length - self.effective_focal_length
+
+        # Compute the z-position of the last surface before the image plane.
+        z = self.z_coordinate(len(self.surfaces) - 2)
+
+        return z + delta
+
+    @cached_property
     def effective_focal_length(self) -> float:
         """Returns the effective focal length of the system."""
         results = self.focal_ray
@@ -251,17 +262,6 @@ class SequentialModel:
             ray = RayFactory.ray(height=0.0, angle=1.0)
 
         return trace(ray, self)
-
-    @cached_property
-    def rear_principal_plane(self) -> float:
-        """Returns the z-coordinate of the rear principal plane."""
-
-        delta = self.back_focal_length - self.effective_focal_length
-
-        # Compute the z-position of the last surface before the image plane.
-        z = self.z_coordinate(len(self.surfaces) - 2)
-
-        return z + delta
 
     @cached_property
     def reversed_focal_ray(self) -> RayTraceResults:
