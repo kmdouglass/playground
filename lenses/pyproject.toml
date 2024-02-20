@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "ezray"
+version = "0.1.0"
+description = "First order ray tracer for optical systems"
+authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "ezray", from = "src" }
+]
+
+[tool.poetry.scripts]
+lenses = "ezray.main:main"
+
+[tool.poetry.dependencies]
+numpy = "*"
+python = "^3.11"
+
+[tool.poetry.dev-dependencies]
+black = "*"
+pytest = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
