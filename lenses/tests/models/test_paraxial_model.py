@@ -3,8 +3,8 @@ from math import inf
 import numpy as np
 import pytest
 
-from ezray import Gap, Surface, SurfaceType, SequentialModel
-from ezray.paraxial_model import transforms
+from ezray import Gap, Surface, SurfaceType, ParaxialModel
+from ezray.models.paraxial_model import transforms
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def convexplano_lens():
     gap_2 = Gap(refractive_index=1.0, thickness=46.59874)
     surf_3 = Surface(semi_diameter=25, surface_type=SurfaceType.IMAGE)
 
-    return SequentialModel([surf_0, gap_0, surf_1, gap_1, surf_2, gap_2, surf_3])
+    return ParaxialModel([surf_0, gap_0, surf_1, gap_1, surf_2, gap_2, surf_3])
 
 
 def test_sequential_model_first_element_not_surface():
@@ -40,7 +40,7 @@ def test_sequential_model_first_element_not_surface():
     )
 
     with pytest.raises(TypeError):
-        SequentialModel([gap_0, surf_1, gap_1, surf_2])
+        ParaxialModel([gap_0, surf_1, gap_1, surf_2])
 
 
 def test_sequential_model_first_element_not_object_surface():
@@ -59,7 +59,7 @@ def test_sequential_model_first_element_not_object_surface():
     )
 
     with pytest.raises(TypeError):
-        SequentialModel([surf_0, gap_0, surf_1, gap_1, surf_2])
+        ParaxialModel([surf_0, gap_0, surf_1, gap_1, surf_2])
 
 
 def test_sequential_model_last_element_not_surface():
@@ -75,7 +75,7 @@ def test_sequential_model_last_element_not_surface():
     gap_1 = Gap(refractive_index=1.5, thickness=5.3)
 
     with pytest.raises(TypeError):
-        SequentialModel([surf_0, gap_0, surf_1, gap_1])
+        ParaxialModel([surf_0, gap_0, surf_1, gap_1])
 
 
 def test_sequential_model_last_element_not_image_surface():
@@ -94,7 +94,7 @@ def test_sequential_model_last_element_not_image_surface():
     )
 
     with pytest.raises(TypeError):
-        SequentialModel([surf_0, gap_0, surf_1, gap_1, surf_2])
+        ParaxialModel([surf_0, gap_0, surf_1, gap_1, surf_2])
 
 
 def test_sequential_model_should_alternate_surfaces_and_gaps():
@@ -112,7 +112,7 @@ def test_sequential_model_should_alternate_surfaces_and_gaps():
     )
 
     with pytest.raises(TypeError):
-        SequentialModel([surf_0, gap_0, surf_1, surf_2])
+        ParaxialModel([surf_0, gap_0, surf_1, surf_2])
 
 
 def test_sequential_model_surfaces():
@@ -130,7 +130,7 @@ def test_sequential_model_surfaces():
         semi_diameter=25, radius_of_curvature=inf, surface_type=SurfaceType.IMAGE
     )
 
-    system = SequentialModel([surf_0, gap_0, surf_1, gap_1, surf_2])
+    system = ParaxialModel([surf_0, gap_0, surf_1, gap_1, surf_2])
 
     assert system.surfaces == [surf_0, surf_1, surf_2]
 
@@ -150,7 +150,7 @@ def test_sequential_model_gaps():
         semi_diameter=25, radius_of_curvature=inf, surface_type=SurfaceType.IMAGE
     )
 
-    system = SequentialModel([surf_0, gap_0, surf_1, gap_1, surf_2])
+    system = ParaxialModel([surf_0, gap_0, surf_1, gap_1, surf_2])
 
     assert system.gaps == [gap_0, gap_1]
 

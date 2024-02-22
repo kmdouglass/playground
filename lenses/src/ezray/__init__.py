@@ -1,9 +1,9 @@
-from .paraxial_model import (
+from .models.paraxial_model import (
     EntrancePupil,
     ExitPupil,
     Gap,
     Surface,
     SurfaceType,
-    SequentialModel,
+    ParaxialModel,
     trace,
 )  # noqa: F401

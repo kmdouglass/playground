@@ -7,7 +7,7 @@ from typing import Any, Iterable, Iterator, Optional
 import numpy as np
 import numpy.typing as npt
 
-from ezray.core.ray_tracing import (
+from ezray.core.paraxial_ray_tracing import (
     DEFAULT_THICKNESS,
     Float,
     propagate,
@@ -58,7 +58,7 @@ class ExitPupil:
 
 
 @dataclass(frozen=True)
-class SequentialModel:
+class ParaxialModel:
     model: list[Surface | Gap]
 
     def __post_init__(self):

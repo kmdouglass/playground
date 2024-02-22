@@ -9,9 +9,6 @@ packages = [
     { include = "ezray", from = "src" }
 ]
 
-[tool.poetry.scripts]
-lenses = "ezray.main:main"
-
 [tool.poetry.dependencies]
 numpy = "*"
 python = "^3.11"

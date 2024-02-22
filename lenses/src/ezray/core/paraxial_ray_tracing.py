@@ -1,6 +1,6 @@
-"""Ray tracing core utilities."""
+"""Paraxial ray tracing core utilities."""
 from enum import Enum
-from typing import Callable, Iterable
+from typing import Callable
 
 import numpy as np
 import numpy.typing as npt

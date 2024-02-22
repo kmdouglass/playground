@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_allclose
 
-from ezray.core.ray_tracing import propagate, RayFactory
+from ezray.core.paraxial_ray_tracing import propagate, RayFactory
 
 
 def test_propagate():

@@ -7,9 +7,9 @@ from math import inf
 
 import numpy as np
 
-from ezray import EntrancePupil, ExitPupil, Gap, Surface, SurfaceType, SequentialModel
+from ezray import EntrancePupil, ExitPupil, Gap, Surface, SurfaceType, ParaxialModel
 
-model = SequentialModel(
+model = ParaxialModel(
     [
         Surface(semi_diameter=12.5, surface_type=SurfaceType.OBJECT),
         Gap(refractive_index=1.0, thickness=inf),

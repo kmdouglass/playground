@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class SquareGrid:
     """A square grid of rays in the the entrance pupil.
 
@@ -21,8 +21,8 @@ class SquareGrid:
 type PupilSampling = SquareGrid
 
 
-@dataclass
-class AbstractField:
+@dataclass(frozen=True)
+class BaseField:
     wavelength: float
 
     def __post_init__(self):
@@ -30,13 +30,13 @@ class AbstractField:
             raise ValueError("Wavelength must be positive")
 
 
-@dataclass
-class Angle(AbstractField):
+@dataclass(frozen=True)
+class Angle(BaseField):
     angle: float
 
 
-@dataclass
-class ObjectHeight(AbstractField):
+@dataclass(frozen=True)
+class ObjectHeight(BaseField):
     height: float
 
 
