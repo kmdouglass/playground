@@ -7,7 +7,7 @@ from typing import Any, Iterable, Iterator, Optional
 import numpy as np
 import numpy.typing as npt
 
-from ezray.core.paraxial_ray_tracing import (
+from ezray.models.paraxial_model_utils import (
     DEFAULT_THICKNESS,
     Float,
     propagate,
