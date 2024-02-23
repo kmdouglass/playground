@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from enum import auto, Enum
 from typing import Optional, Protocol
 
 import numpy as np
@@ -7,10 +8,17 @@ import numpy as np
 type RefractiveIndex = float | complex
 
 
+class SurfaceType(Enum):
+    NOOP = auto()
+    REFLECTING = auto()
+    REFRACTING = auto()
+
+
 @dataclass(frozen=True)
 class Surface(Protocol):
     radius_of_curvature: float
     semi_diameter: float
+    surface_type: SurfaceType
 
     def __post_init__(self):
         if self.semi_diameter < 0:
@@ -26,12 +34,14 @@ class Conic(Surface):
 class Image(Surface):
     radius_of_curvature: float = field(default=np.inf, init=False)
     semi_diameter: float = field(default=np.inf, init=False)
+    surface_type: SurfaceType = field(default=SurfaceType.NOOP, init=False)
 
 
 @dataclass(frozen=True)
 class Object(Surface):
     radius_of_curvature: float = field(default=np.inf, init=False)
     semi_diameter: float = field(default=np.inf, init=False)
+    surface_type: SurfaceType = field(default=SurfaceType.NOOP, init=False)
 
 
 @dataclass(frozen=True)
@@ -41,7 +51,7 @@ class Toric(Conic):
     def __post_init__(self):
         if self.radius_of_revolution < 0:
             raise ValueError("Radius of revolution must be non-negative.")
-        
+
         super().__post_init__()
 
 
