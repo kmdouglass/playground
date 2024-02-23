@@ -7,23 +7,36 @@ from math import inf
 
 import numpy as np
 
-from ezray import EntrancePupil, ExitPupil, Gap, Surface, SurfaceType, ParaxialModel
+from ezray import (
+    Conic,
+    EntrancePupil,
+    ExitPupil,
+    Gap,
+    Image,
+    Object,
+    SurfaceType,
+    ParaxialModel,
+)
+from ezray.models.sequential_model import DefaultSequentialModel
 
-model = ParaxialModel(
+sequential_model = DefaultSequentialModel(
     [
-        Surface(semi_diameter=12.5, surface_type=SurfaceType.OBJECT),
+        Object(),
         Gap(refractive_index=1.0, thickness=inf),
-        Surface(
+        Conic(
             semi_diameter=12.5,
             radius_of_curvature=25.8,
             surface_type=SurfaceType.REFRACTING,
         ),
         Gap(refractive_index=1.515, thickness=5.3),
-        Surface(semi_diameter=12.5, surface_type=SurfaceType.REFRACTING),
+        Conic(semi_diameter=12.5, surface_type=SurfaceType.REFRACTING),
         Gap(refractive_index=1.0, thickness=46.59874),
-        Surface(semi_diameter=12.5, surface_type=SurfaceType.IMAGE),
+        Image(),
     ]
 )
+
+paraxial_model = ParaxialModel(sequential_model)
+
 
 SPECS = {
     "aperture_stop": 1,

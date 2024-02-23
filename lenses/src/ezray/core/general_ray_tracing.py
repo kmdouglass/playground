@@ -1,8 +1,11 @@
 from dataclasses import dataclass, field
 from enum import auto, Enum
-from typing import Optional, Protocol
+from typing import Iterable, Optional, Protocol, runtime_checkable
 
 import numpy as np
+
+
+type Float = np.float64
 
 
 type RefractiveIndex = float | complex
@@ -14,7 +17,8 @@ class SurfaceType(Enum):
     REFRACTING = auto()
 
 
-@dataclass(frozen=True)
+@runtime_checkable
+@dataclass(frozen=True, kw_only=True)
 class Surface(Protocol):
     radius_of_curvature: float
     semi_diameter: float
@@ -25,26 +29,27 @@ class Surface(Protocol):
             raise ValueError("Semi-diameter must be non-negative.")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Conic(Surface):
-    conic_constant: float
+    conic_constant: float = 0
+    radius_of_curvature: float = np.inf
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Image(Surface):
     radius_of_curvature: float = field(default=np.inf, init=False)
     semi_diameter: float = field(default=np.inf, init=False)
     surface_type: SurfaceType = field(default=SurfaceType.NOOP, init=False)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Object(Surface):
     radius_of_curvature: float = field(default=np.inf, init=False)
     semi_diameter: float = field(default=np.inf, init=False)
     surface_type: SurfaceType = field(default=SurfaceType.NOOP, init=False)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Toric(Conic):
     radius_of_revolution: float
 
@@ -55,13 +60,22 @@ class Toric(Conic):
         super().__post_init__()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Gap:
     refractive_index: RefractiveIndex
     thickness: float
 
 
-type SequentialModel = list[Surface | Gap]
+class SequentialModel(Iterable[Surface | Gap], Protocol):
+    """A sequence of gaps and surfaces that is required at each ray tracing step."""
+
+    @property
+    def surfaces(self) -> list[Surface]:
+        """Return a list of surfaces in the model."""
+
+    @property
+    def gaps(self) -> list[Gap]:
+        """Return a list of gaps in the model."""
 
 
 """A sequence of gaps and surfaces that is required at each ray tracing step."""

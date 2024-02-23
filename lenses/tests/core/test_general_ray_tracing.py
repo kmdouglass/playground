@@ -8,7 +8,6 @@ from ezray.core.general_ray_tracing import Conic, Image, Object, SurfaceType, To
 def test_conic_surface_negative_semi_diameter():
     with pytest.raises(ValueError):
         Conic(
-            conic_constant=0,
             radius_of_curvature=100,
             semi_diameter=-1,
             surface_type=SurfaceType.REFRACTING,
@@ -18,7 +17,6 @@ def test_conic_surface_negative_semi_diameter():
 def test_toric_surface_negative_semi_diameter():
     with pytest.raises(ValueError):
         Toric(
-            conic_constant=0,
             radius_of_curvature=100,
             radius_of_revolution=10,
             semi_diameter=-1,
@@ -29,7 +27,6 @@ def test_toric_surface_negative_semi_diameter():
 def test_toric_surface_negative_radius_of_revolution():
     with pytest.raises(ValueError):
         Toric(
-            conic_constant=0,
             radius_of_curvature=100,
             semi_diameter=10,
             radius_of_revolution=-1,

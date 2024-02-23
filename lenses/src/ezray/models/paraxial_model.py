@@ -2,39 +2,64 @@
 from dataclasses import dataclass
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, Iterator, Optional
+from typing import Callable
 
 import numpy as np
+from numpy.linalg import inv
 import numpy.typing as npt
 
-from ezray.models.paraxial_model_utils import (
-    DEFAULT_THICKNESS,
+from ezray.core.general_ray_tracing import (
+    Conic,
     Float,
-    propagate,
-    RayFactory,
-    RayTraceResults,
+    Image,
+    Object,
+    SequentialModel,
+    Surface,
     SurfaceType,
-    TRANSFORMS,
-    TRANSFORMS_REV,
-    z_intercept,
+    Toric,
 )
 
+"""A Ns x Nr x 2 array of ray trace results.
 
-"""A sequence of gaps and surfaces that is required at each ray tracing step."""
-type TracingStep = tuple[Optional[Gap], Surface, Optional[Gap]]
+Ns is the number of surfaces, and Nr is the number of rays. The first column is the
+height of the ray at the surface, and the second column is the angle of the ray at the
+surface.
 
-
-@dataclass(frozen=True)
-class Surface:
-    semi_diameter: float
-    surface_type: SurfaceType
-    radius_of_curvature: float = np.inf
+"""
+type RayTraceResults = npt.NDArray[Float]
 
 
-@dataclass(frozen=True)
-class Gap:
-    refractive_index: float
-    thickness: float
+"""The thickness to assign a gap that is either None or infinite."""
+DEFAULT_THICKNESS = 0.0
+
+
+class RayFactory:
+    """A factory for creating rays."""
+
+    @staticmethod
+    def ray(height: float = 0.0, angle: float = 0.0) -> npt.NDArray[Float]:
+        """Return a ray with the given height and angle."""
+        return np.array([height, angle])
+
+
+def z_intercept(rays: npt.NDArray[Float]) -> npt.NDArray[Float]:
+    """Return the intercept of the rays with the z-axis.
+
+    The intercept is the distance from the ray to the intercept, i.e. the origin is
+    assumed to be at the point where the ray height is equal to the input.
+
+    """
+    rays = np.atleast_2d(rays)
+
+    return -rays[:, 0] / rays[:, 1]
+
+
+def propagate(rays: npt.NDArray[Float], distance: float) -> npt.NDArray[Float]:
+    """Propagate rays a distance along the optical axis."""
+    new_rays = np.atleast_2d(rays.copy())  # Copy to avoid modifying the input array.
+    new_rays[:, 0] += distance * new_rays[:, 1]
+
+    return new_rays
 
 
 @dataclass(frozen=True)
@@ -59,67 +84,7 @@ class ExitPupil:
 
 @dataclass(frozen=True)
 class ParaxialModel:
-    model: list[Surface | Gap]
-
-    def __post_init__(self):
-        # Ensure that the first and last elements are object and image surfaces.
-        if (
-            not isinstance(self.model[0], Surface)
-            or self.model[0].surface_type != SurfaceType.OBJECT
-        ):
-            raise TypeError("The first element must be an object surface.")
-        if (
-            not isinstance(self.model[-1], Surface)
-            or self.model[-1].surface_type != SurfaceType.IMAGE
-        ):
-            raise TypeError("The last element must be an image surface.")
-
-        # Ensure that the elements alternate between surfaces and gaps.
-        for i, element in enumerate(self.model):
-            if i % 2 == 0:
-                if not isinstance(element, Surface):
-                    raise TypeError("Even elements must be surfaces.")
-            else:
-                if not isinstance(element, Gap):
-                    raise TypeError("Odd elements must be gaps.")
-
-    def __getitem__(self, key: Any) -> TracingStep:
-        """Return a tracing step for a given surface ID."""
-        if isinstance(key, int):
-            return tuple(self)[key]
-        elif isinstance(key, slice):
-            return tuple(self)[key.start : key.stop : key.step]
-        else:
-            raise TypeError("Key must be an integer or slice.")
-
-    def __iter__(self) -> Iterator[TracingStep]:
-        """Return an iterator of tracing steps over the system model."""
-        surfaces = self.surfaces
-        gaps = self.gaps
-
-        for i, surface in enumerate(surfaces):
-            if i == 0:
-                # Object space; skip the first gap.
-                continue
-            elif i == len(surfaces) - 1:
-                yield gaps[i - 1], surface, None
-            else:
-                yield gaps[i - 1], surface, gaps[i]
-
-    def __len__(self) -> int:
-        """Return the number of tracing steps in the system."""
-        return len(self.surfaces) - 1
-
-    def _is_obj_at_inf(self) -> bool:
-        return np.isinf(self.gaps[0].thickness)
-
-    @cached_property
-    def surfaces(self) -> list[Surface]:
-        return [element for element in self.model if isinstance(element, Surface)]
-
-    @cached_property
-    def gaps(self) -> list[Gap]:
-        return [element for element in self.model if isinstance(element, Gap)]
+    sequential_model: SequentialModel
 
     @cached_property
     def aperture_stop(self) -> int:
@@ -132,7 +97,9 @@ class ParaxialModel:
         """
         results = self.pseudo_marginal_ray
 
-        semi_diameters = np.array([surface.semi_diameter for surface in self.surfaces])
+        semi_diameters = np.array(
+            [surface.semi_diameter for surface in self.sequential_model.surfaces]
+        )
         ratios = semi_diameters / results[:, 0, 0].T
 
         # Do not include the object or image surfaces when finding the minimum.
@@ -153,7 +120,7 @@ class ParaxialModel:
         delta = self.back_focal_length - self.effective_focal_length
 
         # Compute the z-position of the last surface before the image plane.
-        z = self.z_coordinate(len(self.surfaces) - 2)
+        z = self.z_coordinate(len(self.sequential_model.surfaces) - 2)
 
         return z + delta
 
@@ -171,10 +138,10 @@ class ParaxialModel:
     def entrance_pupil(self) -> EntrancePupil:
         # Aperture stop is first surface
         if self.aperture_stop == 1:
-            return EntrancePupil(0, self.surfaces[1].semi_diameter)
+            return EntrancePupil(0, self.sequential_model.surfaces[1].semi_diameter)
 
         # Trace a ray from the aperture stop backwards through the system
-        steps = self[: self.aperture_stop]
+        steps = self.sequential_model[: self.aperture_stop]
         ray = RayFactory.ray(height=0.0, angle=1.0)
 
         results = trace(ray, steps, reverse=True)
@@ -191,14 +158,14 @@ class ParaxialModel:
 
     @cached_property
     def exit_pupil(self) -> ExitPupil:
-        z_last_surface = self.z_coordinate(len(self.surfaces) - 2)
+        z_last_surface = self.z_coordinate(len(self.sequential_model.surfaces) - 2)
 
         # Aperture stop is last non-image plane surface.
-        if self.aperture_stop == len(self.surfaces) - 2:
+        if self.aperture_stop == len(self.sequential_model.surfaces) - 2:
             return ExitPupil(z_last_surface, self.surfaces[-2].semi_diameter)
 
         # Trace a ray from the aperture stop forwards through the system
-        steps = self[self.aperture_stop - 1 :]
+        steps = self.sequential_model[self.aperture_stop - 1 :]
         ray = RayFactory.ray(height=0.0, angle=1.0)
 
         results = trace(ray, steps)
@@ -232,7 +199,7 @@ class ParaxialModel:
         # Ray parallel to the optical axis at a height of 1.
         ray = RayFactory.ray(height=1.0, angle=0.0)
 
-        return trace(ray, self)
+        return trace(ray, self.sequential_model)
 
     @cached_property
     def marginal_ray(self) -> RayTraceResults:
@@ -243,7 +210,9 @@ class ParaxialModel:
         """
         pmr = self.pseudo_marginal_ray
 
-        semi_diameters = np.array([surface.semi_diameter for surface in self.surfaces])
+        semi_diameters = np.array(
+            [surface.semi_diameter for surface in self.sequential_model.surfaces]
+        )
         ratios = semi_diameters / pmr[:, 0, 0].T
 
         scale_factor = ratios[self.aperture_stop]
@@ -261,7 +230,7 @@ class ParaxialModel:
             # Ray originating at the optical axis at an angle of 1.
             ray = RayFactory.ray(height=0.0, angle=1.0)
 
-        return trace(ray, self)
+        return trace(ray, self.sequential_model)
 
     @cached_property
     def reversed_focal_ray(self) -> RayTraceResults:
@@ -269,7 +238,7 @@ class ParaxialModel:
         # Ray parallel to the optical axis at a height of 1.
         ray = RayFactory.ray(height=1.0, angle=0.0)
 
-        return trace(ray, self, reverse=True)
+        return trace(ray, self.sequential_model, reverse=True)
 
     def z_coordinate(self, surface_id: int) -> float:
         """Returns the z-coordinate of a surface.
@@ -277,17 +246,80 @@ class ParaxialModel:
         The origin is at the first surface.
 
         """
-        if surface_id == 0 and np.isinf(self.gaps[0].thickness):
+        if surface_id == 0 and np.isinf(self.sequential_model.gaps[0].thickness):
             return -np.inf
         if surface_id == 1:
             return 0.0
 
-        return sum(gap.thickness for gap in self.gaps[1:surface_id])
+        return sum(gap.thickness for gap in self.sequential_model.gaps[1:surface_id])
+
+    def _is_obj_at_inf(self) -> bool:
+        return np.isinf(self.sequential_model.gaps[0].thickness)
 
 
-def transforms(
-    steps: Iterable[TracingStep], reverse: bool = False
-) -> list[npt.NDArray[Float]]:
+def surface_rtm_mapping(
+    surface: Surface, reverse: bool = False
+) -> Callable[[float, float, float, float], npt.NDArray[Float]]:
+    """Return the ray transfer matrix for a surface."""
+    if reverse:
+        match surface:
+            case Conic(surface_type=SurfaceType.REFRACTING):
+                return lambda t, R, n0, n1: inv(
+                    np.array([[1, 0], [(n0 - n1) / R / n0, n1 / n0]])
+                ) @ np.array(
+                    [[1, -t], [0, 1]]
+                )  # n0 and n1 are swapped!
+            case Conic(surface_type=SurfaceType.REFLECTING):
+                return lambda t, R, *_: np.array([[1, 0], [2 / R, 1]]) @ np.array(
+                    [[1, -t], [0, 1]]
+                )
+            case Image():
+                return lambda *_: np.array([[1, 0], [0, 1]])
+            case Object():
+                return lambda t, *_: np.array([[1, 0], [0, 1]]) @ np.array(
+                    [[1, -t], [0, 1]]
+                )
+            # Torics are treated the same as conics in the paraxial model.
+            case Toric(surface_type=SurfaceType.REFRACTING):
+                return lambda t, R, n0, n1: inv(
+                    np.array([[1, 0], [(n0 - n1) / R / n0, n1 / n0]])
+                ) @ np.array(
+                    [[1, -t], [0, 1]]
+                )  # n0 and n1 are swapped!
+            case Toric(surface_type=SurfaceType.REFLECTING):
+                return lambda t, R, *_: np.array([[1, 0], [2 / R, 1]]) @ np.array(
+                    [[1, -t], [0, 1]]
+                )
+            case _:
+                raise ValueError(f"Unknown surface type: {surface}")
+
+    match surface:
+        case Conic(surface_type=SurfaceType.REFRACTING):
+            return lambda t, R, n0, n1: np.array(
+                [[1, 0], [(n0 - n1) / R / n1, n0 / n1]]
+            ) @ np.array([[1, t], [0, 1]])
+        case Conic(surface_type=SurfaceType.REFLECTING):
+            return lambda t, R, *_: np.array([[1, 0], [-2 / R, 1]]) @ np.array(
+                [[1, t], [0, 1]]
+            )
+        case Image():
+            return lambda t, *_: np.array([[1, 0], [0, 1]]) @ np.array([[1, t], [0, 1]])
+        case Object():
+            return lambda *_: np.array([[1, 0], [0, 1]])
+        # Torics are treated the same as conics in the paraxial model.
+        case Toric(surface_type=SurfaceType.REFRACTING):
+            return lambda t, R, n0, n1: np.array(
+                [[1, 0], [(n0 - n1) / R / n1, n0 / n1]]
+            ) @ np.array([[1, t], [0, 1]])
+        case Toric(surface_type=SurfaceType.REFLECTING):
+            return lambda t, R, *_: np.array([[1, 0], [-2 / R, 1]]) @ np.array(
+                [[1, t], [0, 1]]
+            )
+        case _:
+            raise ValueError(f"Unknown surface type: {surface}")
+
+
+def rtms(steps: SequentialModel, reverse: bool = False) -> list[npt.NDArray[Float]]:
     """Compute the ray transfer matrices for each tracing step.
 
     In the case that the object space is of infinite extent, the first gap thickness is
@@ -319,26 +351,21 @@ def transforms(
         n0 = gap_1.refractive_index if gap_0 is None else gap_0.refractive_index
         n1 = gap_0.refractive_index if gap_1 is None else gap_1.refractive_index
 
-        if reverse:
-            txs.append(TRANSFORMS_REV[surface.surface_type](t, R, n0, n1))
-        else:
-            txs.append(TRANSFORMS[surface.surface_type](t, R, n0, n1))
+        txs.append(surface_rtm_mapping(surface, reverse=reverse)(t, R, n0, n1))
 
     return txs
 
 
 def trace(
-    rays: npt.NDArray[Float], steps: Iterable[TracingStep], reverse=False
+    rays: npt.NDArray[Float], steps=SequentialModel, reverse=False
 ) -> npt.NDArray[Float]:
-    """Trace rays through a system.
+    """Trace rays through a paraxial system.
 
     Parameters
     ----------
     rays : npt.NDArray[Float]
         Array of rays to trace through the system. Each row is a ray, and the
         columns are the ray height and angle.
-    steps : Iterable[TracingStep]
-        An iterable of tracing steps.
     reverse : bool, optional
         If True, the rays are traced in the reverse direction. This is useful, for
         example, for computing the entrance pupil location.
@@ -348,7 +375,7 @@ def trace(
     rays = np.atleast_2d(rays)
 
     # Compute the ray transfer matrices for each step.
-    txs = transforms(steps, reverse=reverse)
+    txs = rtms(steps, reverse=reverse)
 
     # Pre-allocate the results. Shape is Ns X Nr X 2, where Ns is the number of
     # surfaces, Nr is the number of rays, and 2 is the ray height and angle.
