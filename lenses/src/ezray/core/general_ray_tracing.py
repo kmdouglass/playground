@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import auto, Enum
-from typing import Iterable, Optional, Protocol, runtime_checkable
+from typing import Optional, Protocol, Sequence, runtime_checkable
 
 import numpy as np
 
@@ -50,6 +50,12 @@ class Object(Surface):
 
 
 @dataclass(frozen=True, kw_only=True)
+class Stop(Surface):
+    radius_of_curvature: float = field(default=np.inf, init=False)
+    surface_type: SurfaceType = field(default=SurfaceType.NOOP, init=False)
+
+
+@dataclass(frozen=True, kw_only=True)
 class Toric(Conic):
     radius_of_revolution: float
 
@@ -66,7 +72,11 @@ class Gap:
     thickness: float
 
 
-class SequentialModel(Iterable[Surface | Gap], Protocol):
+"""A sequence of gaps and surfaces that is required at each ray tracing step."""
+type TracingStep = tuple[Optional[Gap], Surface, Optional[Gap]]
+
+
+class SequentialModel(Sequence[TracingStep]):
     """A sequence of gaps and surfaces that is required at each ray tracing step."""
 
     @property
@@ -76,7 +86,3 @@ class SequentialModel(Iterable[Surface | Gap], Protocol):
     @property
     def gaps(self) -> list[Gap]:
         """Return a list of gaps in the model."""
-
-
-"""A sequence of gaps and surfaces that is required at each ray tracing step."""
-type TracingStep = tuple[Optional[Gap], Surface, Optional[Gap]]
