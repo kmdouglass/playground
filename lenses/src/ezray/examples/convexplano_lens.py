@@ -7,44 +7,41 @@ from math import inf
 
 import numpy as np
 
-from ezray import (
-    Conic,
-    EntrancePupil,
-    ExitPupil,
-    Gap,
-    Image,
-    Object,
-    SurfaceType,
-    ParaxialModel,
-)
-from ezray.models.sequential_model import DefaultSequentialModel
+from ezray import OpticalSystem, SystemBuilder
+from ezray.specs.aperture import EntrancePupil
+from ezray.specs.fields import Angle
+from ezray.specs.gaps import Gap
+from ezray.specs.surfaces import Conic, Image, Object, SurfaceType
 
-sequential_model = DefaultSequentialModel(
-    [
+
+system: OpticalSystem = SystemBuilder(
+    aperture=EntrancePupil(semi_diameter=12.5),
+    fields=[Angle(angle=0, wavelength=0.5876)],
+    gaps=[
+        Gap(thickness=inf),
+        Gap(refractive_index=1.515, thickness=5.3),
+        Gap(thickness=46.59874),
+    ],
+    surfaces=[
         Object(),
-        Gap(refractive_index=1.0, thickness=inf),
         Conic(
             semi_diameter=12.5,
             radius_of_curvature=25.8,
             surface_type=SurfaceType.REFRACTING,
         ),
-        Gap(refractive_index=1.515, thickness=5.3),
         Conic(semi_diameter=12.5, surface_type=SurfaceType.REFRACTING),
-        Gap(refractive_index=1.0, thickness=46.59874),
         Image(),
-    ]
-)
-
-paraxial_model = ParaxialModel(sequential_model)
+    ],
+).build()
 
 
-SPECS = {
+PARAXIAL_PROPERTIES = {
     "aperture_stop": 1,
     "back_focal_length": 46.59874,
     "back_principal_plane": 1.80174,
     "effective_focal_length": 50.097,
-    "entrance_pupil": EntrancePupil(location=0.0, semi_diameter=12.5),
-    "exit_pupil": ExitPupil(location=1.80165, semi_diameter=12.5),
+    "entrance_pupil": {"location": 0.0, "semi_diameter": 12.5},
+    "exit_pupil": {"location": 1.80165, "semi_diameter": 12.5},
     "front_focal_length": -50.097,
     "front_principal_plane": 0.0,
     "marginal_ray": np.array(

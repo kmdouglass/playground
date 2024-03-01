@@ -1,8 +1,7 @@
 """Models for paraxial optical system design."""
 from dataclasses import dataclass
-from enum import Enum
 from functools import cached_property
-from typing import Callable
+from typing import Callable, TypedDict
 
 import numpy as np
 from numpy.linalg import inv
@@ -62,24 +61,9 @@ def propagate(rays: npt.NDArray[Float], distance: float) -> npt.NDArray[Float]:
     return new_rays
 
 
-@dataclass(frozen=True)
-class EntrancePupil:
+class Pupil(TypedDict):
     location: float
     semi_diameter: float
-
-    def __post_init__(self):
-        if self.semi_diameter <= 0:
-            raise ValueError("Semi-diameter must be positive.")
-
-
-@dataclass(frozen=True)
-class ExitPupil:
-    location: float
-    semi_diameter: float
-
-    def __post_init__(self):
-        if self.semi_diameter <= 0:
-            raise ValueError("Semi-diameter must be positive.")
 
 
 @dataclass(frozen=True)
@@ -135,10 +119,13 @@ class ParaxialModel:
         return -y_1 / u_final
 
     @cached_property
-    def entrance_pupil(self) -> EntrancePupil:
+    def entrance_pupil(self) -> Pupil:
         # Aperture stop is first surface
         if self.aperture_stop == 1:
-            return EntrancePupil(0, self.sequential_model.surfaces[1].semi_diameter)
+            return {
+                "location": 0,
+                "semi_diameter": self.sequential_model.surfaces[1].semi_diameter,
+            }
 
         # Trace a ray from the aperture stop backwards through the system
         steps = self.sequential_model[: self.aperture_stop]
@@ -154,15 +141,18 @@ class ParaxialModel:
         )
         semi_diameter = propagate(self.marginal_ray[0, 0, :], distance)[0, 0]
 
-        return EntrancePupil(location, semi_diameter)
+        return {"location": location, "semi_diameter": semi_diameter}
 
     @cached_property
-    def exit_pupil(self) -> ExitPupil:
+    def exit_pupil(self) -> Pupil:
         z_last_surface = self.z_coordinate(len(self.sequential_model.surfaces) - 2)
 
         # Aperture stop is last non-image plane surface.
         if self.aperture_stop == len(self.sequential_model.surfaces) - 2:
-            return ExitPupil(z_last_surface, self.surfaces[-2].semi_diameter)
+            return {
+                "location": z_last_surface,
+                "semi_diameter": self.sequential_model.surfaces[-2].semi_diameter,
+            }
 
         # Trace a ray from the aperture stop forwards through the system
         steps = self.sequential_model[self.aperture_stop - 1 :]
@@ -176,7 +166,7 @@ class ParaxialModel:
 
         location = z_last_surface + distance
 
-        return ExitPupil(location, semi_diameter)
+        return {"location": location, "semi_diameter": semi_diameter}
 
     @cached_property
     def front_focal_length(self) -> float:

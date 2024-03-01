@@ -9,11 +9,11 @@ from ezray.specs import ApertureSpec, FieldSpec, GapSpec, SurfaceSpec
 
 class OpticalSystem:
     def __init__(self, sequential_model: SequentialModel):
-        self.sequential_model = sequential_model
+        self._sequential_model = sequential_model
         self.paraxial_model = ParaxialModel(sequential_model)
 
     def __repr__(self) -> str:
-        return f"OpticalSystem(sequential_model={self.sequential_model})"
+        return f"OpticalSystem(sequential_model={self._sequential_model})"
 
 
 @dataclass

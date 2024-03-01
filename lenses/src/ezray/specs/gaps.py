@@ -5,12 +5,15 @@ from ezray.core.general_ray_tracing import Gap as CoreGap
 
 
 @dataclass(frozen=True)
-class GapSpec:
-    refractive_index: RefractiveIndex
+class Gap:
     thickness: float
+    refractive_index: RefractiveIndex = 1.0
 
     def into_gap(self) -> CoreGap:
         return CoreGap(
             refractive_index=self.refractive_index,
             thickness=self.thickness,
         )
+
+
+type GapSpec = Gap
