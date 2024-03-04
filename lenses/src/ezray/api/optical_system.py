@@ -44,3 +44,8 @@ class OpticalSystem:
             raise ValueError(
                 "The number of surfaces must be one more than the number of gaps"
             )
+
+        # Verify that all fields are of the same type
+        field_types = {type(field) for field in fields}
+        if len(field_types) != 1:
+            raise ValueError(f"All fields must be of the same type. Got: {field_types}")
