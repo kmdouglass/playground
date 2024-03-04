@@ -16,6 +16,7 @@ logger = getLogger(__name__)
 
 class Analyzer:
     """Analyzes images and returns a dict of results."""
+
     def run(self, data) -> dict[str, Any]:
         # Fake analysis; randomly return a dict with a value of None 10% of the time
         if random.random() < 0.1:
@@ -38,14 +39,14 @@ class Controller:
 
         event = MDAEvent(exposure=10)
 
-        # Start the acquisition            
+        # Start the acquisition
         self._queue.put(event)
 
         while True:
             # Perform a measurement
             # Normally, we'd have to wait on a new image event here, otherwise there might not be
             # anything in the buffer yet.
-            time.sleep(.1)
+            time.sleep(0.1)
             self._mmc.snapImage()
             img = self._mmc.getImage()
 
@@ -53,7 +54,7 @@ class Controller:
             results = self._analyzer.run(img)
 
             # Decide what to do. This is the key part of the reactive loop.
-            if results['result'] is None:
+            if results["result"] is None:
                 # Do nothing and return
                 logger.info("Analyzer returned no results. Stopping...")
                 self._queue.put(self.STOP_EVENT)

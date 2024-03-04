@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Optional, Sequence
+from dataclasses import dataclass, InitVar, field
+from typing import Sequence
 
 from ezray.core.general_ray_tracing import SequentialModel
 from ezray.models.sequential_model import DefaultSequentialModel
@@ -7,30 +7,22 @@ from ezray.models.paraxial_model import ParaxialModel
 from ezray.specs import ApertureSpec, FieldSpec, GapSpec, SurfaceSpec
 
 
-class OpticalSystem:
-    def __init__(self, sequential_model: SequentialModel):
-        self._sequential_model = sequential_model
-        self.paraxial_model = ParaxialModel(sequential_model)
-
-    def __repr__(self) -> str:
-        return f"OpticalSystem(sequential_model={self._sequential_model})"
-
-
 @dataclass
-class SystemBuilder:
-    aperture: Optional[ApertureSpec] = None
-    fields: Optional[Sequence[FieldSpec]] = None
-    gaps: Optional[Sequence[GapSpec]] = None
-    surfaces: Optional[Sequence[SurfaceSpec]] = None
+class OpticalSystem:
+    aperture: InitVar[ApertureSpec]
+    fields: InitVar[Sequence[FieldSpec]]
+    gaps: InitVar[Sequence[GapSpec]]
+    surfaces: InitVar[Sequence[SurfaceSpec]]
 
-    def build(self) -> OpticalSystem:
-        if self._is_not_initialized():
-            raise ValueError("The optical system builder is not fully initialized")
+    paraxial_model: ParaxialModel = field(init=False)
+    sequential_model: SequentialModel = field(init=False)
 
-        self._validate_specs()
+    def __post_init__(self, aperture, fields, gaps, surfaces) -> None:
+        OpticalSystem.validate_specs(aperture, fields, gaps, surfaces)
 
-        core_gaps = [gap.into_gap() for gap in self.gaps]
-        core_surfaces = [surface.into_surface() for surface in self.surfaces]
+        # Convert the specs into the core types
+        core_gaps = [gap.into_gap() for gap in gaps]
+        core_surfaces = [surface.into_surface() for surface in surfaces]
 
         # Zip the surfaces and gaps together, and then flatten the list
         # There is one more surface than gap, so add it at the end
@@ -38,22 +30,17 @@ class SystemBuilder:
             x for pair in zip(core_surfaces, core_gaps) for x in pair
         ] + [core_surfaces[-1]]
 
-        return OpticalSystem(
-            sequential_model=DefaultSequentialModel(surface_gap_sequence)
-        )
+        self.sequential_model = DefaultSequentialModel(surface_gap_sequence)
+        self.paraxial_model = ParaxialModel(self.sequential_model)
 
-    def _is_not_initialized(self) -> bool:
-        return any(
-            [
-                self.aperture is None,
-                self.fields is None,
-                self.gaps is None,
-                self.surfaces is None,
-            ]
-        )
-
-    def _validate_specs(self) -> None:
-        if len(self.surfaces) != len(self.gaps) + 1:
+    @staticmethod
+    def validate_specs(
+        aperture: ApertureSpec,
+        fields: Sequence[FieldSpec],
+        gaps: Sequence[GapSpec],
+        surfaces: Sequence[SurfaceSpec],
+    ) -> None:
+        if len(surfaces) != len(gaps) + 1:
             raise ValueError(
                 "The number of surfaces must be one more than the number of gaps"
             )

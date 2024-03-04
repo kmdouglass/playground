@@ -8,18 +8,22 @@ from skimage import restoration
 
 class PhaseOption(Enum):
     """Phase computation options."""
+
     ARCTAN = "arctan"
 
 
 class Results(TypedDict):
     """Results of processing a single sideband hologram."""
+
     img: np.ndarray
     img_fft: np.ndarray
     phase: np.ndarray
     phase_unwrapped: np.ndarray
 
 
-def compute_mask_radius_px(num_px: int, px_size_um: float, wavelength_um: float, mag: float, na: float) -> int:
+def compute_mask_radius_px(
+    num_px: int, px_size_um: float, wavelength_um: float, mag: float, na: float
+) -> int:
     """Compute the radius of the circular mask in pixels.
 
     Parameters
@@ -55,8 +59,10 @@ def compute_mask_radius_px(num_px: int, px_size_um: float, wavelength_um: float,
 def mask_fft(img_fft: np.ndarray, radius_px: int = 10) -> np.ndarray:
     """Apply a circular mask to a shifted FFT about the origin."""
     fft_cp = img_fft.copy()
-    y, x = np.ogrid[0:fft_cp.shape[0], 0:fft_cp.shape[1]]
-    mask = (x - fft_cp.shape[0] // 2)**2 + (y - fft_cp.shape[1] // 2)**2 <= radius_px**2
+    y, x = np.ogrid[0 : fft_cp.shape[0], 0 : fft_cp.shape[1]]
+    mask = (x - fft_cp.shape[0] // 2) ** 2 + (
+        y - fft_cp.shape[1] // 2
+    ) ** 2 <= radius_px**2
     fft_cp[~mask] = 0
 
     return fft_cp
@@ -67,15 +73,15 @@ def unwrap(phase: np.ndarray) -> np.ndarray:
 
 
 def proc_sideband(
-        img: np.ndarray,
-        px_size_um: float = 5.2,
-        wavelength_um: float = 0.641,
-        mag_obj: float = 20,
-        mag_4f: float = 4,
-        na: float = 0.4,
-        grating_period: float = 3.3333,
-        phase_option: PhaseOption = PhaseOption.ARCTAN,
-    ) -> np.ndarray:
+    img: np.ndarray,
+    px_size_um: float = 5.2,
+    wavelength_um: float = 0.641,
+    mag_obj: float = 20,
+    mag_4f: float = 4,
+    na: float = 0.4,
+    grating_period: float = 3.3333,
+    phase_option: PhaseOption = PhaseOption.ARCTAN,
+) -> np.ndarray:
     """Process a single sideband hologram.
 
     Parameters
@@ -105,7 +111,9 @@ def proc_sideband(
 
     # Circular shift the FFTs to center the origin
     dk = 2 * np.pi / (num_px * px_size_um / (mag_obj * mag_4f))
-    carrier_freq = 2 * np.pi * mag_obj / grating_period  # Multiply by mag_obj to get carrier freq in sample plane
+    carrier_freq = (
+        2 * np.pi * mag_obj / grating_period
+    )  # Multiply by mag_obj to get carrier freq in sample plane
     shift_px = int(carrier_freq / dk)  # Amount to bring modulated component to center
     img_fft = np.roll(img_fft, shift=shift_px, axis=1)
 

@@ -7,14 +7,14 @@ from math import inf
 
 import numpy as np
 
-from ezray import OpticalSystem, SystemBuilder
+from ezray import OpticalSystem
 from ezray.specs.aperture import EntrancePupil
 from ezray.specs.fields import Angle
 from ezray.specs.gaps import Gap
 from ezray.specs.surfaces import Conic, Image, Object, SurfaceType
 
 
-system: OpticalSystem = SystemBuilder(
+system: OpticalSystem = OpticalSystem(
     aperture=EntrancePupil(semi_diameter=12.5),
     fields=[Angle(angle=0, wavelength=0.5876)],
     gaps=[
@@ -32,7 +32,7 @@ system: OpticalSystem = SystemBuilder(
         Conic(semi_diameter=12.5, surface_type=SurfaceType.REFRACTING),
         Image(),
     ],
-).build()
+)
 
 
 PARAXIAL_PROPERTIES = {

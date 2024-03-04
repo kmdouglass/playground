@@ -30,10 +30,10 @@ class Power:
             raise ValueError("Power must be greater than or equal to 0.")
         if self.bit_depth <= 0:
             raise ValueError("Bit depth must be greater than 0.")
-        
+
     def hex(self) -> str:
         """Converts a power value to its hexadecimal string representation."""
-        N = self.value * (2 ** self.bit_depth) / DRIVER_MAX_RF_POWER
+        N = self.value * (2**self.bit_depth) / DRIVER_MAX_RF_POWER
 
         # Strip the "0x" prefix from the hexadecimal string.
         return str(hex(int(N)))[2:]
@@ -54,33 +54,33 @@ class Freq:
         other_value = other.value * other.unit.value
 
         new = (f_value + other_value) / self.unit.value
-        
+
         return Freq(value=new, unit=self.unit, bit_depth=self.bit_depth)
-    
+
     def __gt__(self, other: Self) -> bool:
         return self.value > other.value
-    
+
     def __mul__(self, other: float) -> Self:
         return Freq(value=self.value * other, unit=self.unit, bit_depth=self.bit_depth)
-    
+
     def __sub__(self, other: Self) -> Self:
         f_value = self.value * self.unit.value
         other_value = other.value * other.unit.value
 
         new = (f_value - other_value) / self.unit.value
-        
+
         return Freq(value=new, unit=self.unit, bit_depth=self.bit_depth)
-    
+
     def __truediv__(self, other: int) -> Self:
         return Freq(value=self.value / other, unit=self.unit, bit_depth=self.bit_depth)
 
     def hex(self) -> str:
         """Converts a frequency value to its hexadecimal string representation."""
-        N = self.value * (2 ** self.bit_depth) / 500
+        N = self.value * (2**self.bit_depth) / 500
 
         # Strip the "0x" prefix from the hexadecimal string.
         return str(hex(int(N)))[2:]
-    
+
 
 def f_seq(f_center: Freq, f_radius: Freq, step: int = 1) -> list[tuple[Freq, Freq]]:
     """Compute a sequence of frequencies that form a circle."""
@@ -97,7 +97,9 @@ def debug(f_x: Freq, f_y: Freq, power: Power) -> None:
     print(f"X: {f_x.hex()}, Y: {f_y.hex()}, Power: {power.hex()}")
 
 
-def send(ser: serial.Serial, f_x: Freq, f_y: Freq, power: Power, terminator="\r") -> None:
+def send(
+    ser: serial.Serial, f_x: Freq, f_y: Freq, power: Power, terminator="\r"
+) -> None:
     """Send the hexadecimal representation of the X and Y frequencies to the AOD."""
     cmdx = f":L0G{f_x.hex()}P{power.hex()}{terminator}"
     cmdy = f":L1G{f_y.hex()}P{power.hex()}{terminator}"
@@ -105,21 +107,21 @@ def send(ser: serial.Serial, f_x: Freq, f_y: Freq, power: Power, terminator="\r"
     ser.write(cmdx.encode())
     ser.flush()
     _ = ser.readline()
-    
+
     ser.write(cmdy.encode())
     ser.flush()
     _ = ser.readline()
 
 
 def main(
-        radius: float = 0.6,
-        fmin: Freq = Freq(value=63),
-        fmax: Freq = Freq(value=121),
-        pmax: Power = Power(value=0.4),
-        step: float = 1,
-    ):
+    radius: float = 0.6,
+    fmin: Freq = Freq(value=63),
+    fmax: Freq = Freq(value=121),
+    pmax: Power = Power(value=0.4),
+    step: float = 1,
+):
     """Draw a circle with a radius that is a fraction of the maximum allowed by the AOD.
-    
+
     Parameters
     ----------
     radius : float
@@ -151,7 +153,7 @@ def main(
     f_center: Freq = (fmax + fmin) / 2
     f_radius = (fmax - fmin) * radius / 2
     fs = f_seq(f_center, f_radius, step=step)
-    
+
     # Loop over the sequence of frequencies and print the hexadecimal representation indefinitely.
     while True:
         for f_x, f_y in fs:

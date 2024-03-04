@@ -1,1 +1,1 @@
-from .api.optical_system import OpticalSystem, SystemBuilder
+from .api.optical_system import OpticalSystem  # noqa: F401

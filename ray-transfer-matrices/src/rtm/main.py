@@ -33,15 +33,15 @@ def main():
     forward_vals = [(n, 1.515), (R, 25.8), (t, 5.3), (bfl, 46.6)]
     reverse_vals = [(n, 1.515), (R, -25.8), (t, 5.3), (bfl, 46.6)]
     inverse_vals = [(n, 1.515), (R, -25.8), (t, -5.3), (bfl, -46.6)]
-    
+
     forward_rtm = forward()
     forward_ray = Matrix([[1], [0]])  # ray from infinity
-    
+
     reverse_rtm = reverse()
     reverse_ray = Matrix([[0], [0.25]])  # from paraxial object point
 
     inverse = forward_rtm.inv()
-    
+
     print("Ray trace matrices")
     print("")
     print(f"Forward RTM: {forward_rtm}")
@@ -52,9 +52,15 @@ def main():
 
     print("Ray trace results")
     print("")
-    print(f"Object at infinity: {forward_rtm.subs(forward_vals) * forward_ray}")  # ray focused on axis
-    print(f"Object at finite distance: {reverse_rtm.subs(reverse_vals) * reverse_ray}")  # ray parallel to axis
-    print(f"Object at finite distance using inverse of forward matrix: {inverse.subs(inverse_vals) * reverse_ray}")
+    print(
+        f"Object at infinity: {forward_rtm.subs(forward_vals) * forward_ray}"
+    )  # ray focused on axis
+    print(
+        f"Object at finite distance: {reverse_rtm.subs(reverse_vals) * reverse_ray}"
+    )  # ray parallel to axis
+    print(
+        f"Object at finite distance using inverse of forward matrix: {inverse.subs(inverse_vals) * reverse_ray}"
+    )
 
     print("--------------------")
 
