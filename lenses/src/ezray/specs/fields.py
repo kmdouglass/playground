@@ -32,6 +32,10 @@ class BaseField(ABC):
             raise ValueError("Wavelength must be positive")
 
     @abstractmethod
+    def __abs__(self) -> Self:
+        pass
+
+    @abstractmethod
     def __lt__(self, other: Self) -> bool:
         pass
 
@@ -40,6 +44,9 @@ class BaseField(ABC):
 class Angle(BaseField):
     angle: float
 
+    def __abs__(self) -> Self:
+        return self.__class__(wavelength=self.wavelength, angle=abs(self.angle))
+
     def __lt__(self, other: Self) -> bool:
         return self.angle < other.angle
 
@@ -47,6 +54,9 @@ class Angle(BaseField):
 @dataclass(frozen=True, kw_only=True)
 class ObjectHeight(BaseField):
     height: float
+
+    def __abs__(self) -> Self:
+        return self.__class__(wavelength=self.wavelength, height=abs(self.height))
 
     def __lt__(self, other: Self) -> bool:
         return self.height < other.height

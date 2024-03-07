@@ -13,11 +13,12 @@ from ezray.core.general_ray_tracing import (
     Image,
     Object,
     SequentialModel,
+    Stop,
     Surface,
     SurfaceType,
     Toric,
 )
-from ezray.specs.fields import FieldSpec
+from ezray.specs.fields import Angle, FieldSpec, ObjectHeight
 
 """A Ns x Nr x 2 array of ray trace results.
 
@@ -109,6 +110,29 @@ class ParaxialModel:
         z = self.z_coordinate(len(self.sequential_model.surfaces) - 2)
 
         return z + delta
+    
+    @cached_property
+    def chief_ray(self) -> RayTraceResults:
+        """Returns the chief ray through the system.
+
+        """
+        # TODO: Enforce telecentricity through a system-level constraint
+        enp_loc: float = self.entrance_pupil["location"]
+        obj_loc: float = 0 if self._is_obj_at_inf() else self.z_coordinate(0)
+        sep = enp_loc - obj_loc
+        match max_field := max(abs(field) for field in self.fields):
+            case Angle(angle=angle):
+                paraxial_angle = np.tan(np.deg2rad(angle))
+                height = -sep * paraxial_angle
+            case ObjectHeight(height=height):
+                # Object distance is finite with this field type by convention
+                paraxial_angle = -height / sep
+            case _:
+                raise ValueError(f"Unknown field type: {max_field}")
+            
+        ray = RayFactory.ray(height=height, angle=paraxial_angle)
+
+        return trace(ray, self.sequential_model)
 
     @cached_property
     def effective_focal_length(self) -> float:
