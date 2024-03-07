@@ -4,10 +4,11 @@ The object is at infinity; aperture stop is the first surface.
 
 """
 from math import inf
+from typing import Any
 
 import numpy as np
 
-from ezray import OpticalSystem
+from ezray import Axis, ParaxialModelID, OpticalSystem
 from ezray.specs.aperture import EntrancePupil
 from ezray.specs.fields import Angle
 from ezray.specs.gaps import Gap
@@ -35,7 +36,7 @@ system: OpticalSystem = OpticalSystem(
 )
 
 
-PARAXIAL_PROPERTIES = {
+_paraxial_properties = {
     "aperture_stop": 1,
     "back_focal_length": 46.59874,
     "back_principal_plane": 1.80174,
@@ -52,4 +53,9 @@ PARAXIAL_PROPERTIES = {
             [[0, -0.24950]],
         ]
     ),
+}
+
+PARAXIAL_PROPERTIES: dict[ParaxialModelID, dict[str, Any]] = {
+    (0.5876, Axis.X): _paraxial_properties,
+    (0.5876, Axis.Y): _paraxial_properties,
 }

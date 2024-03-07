@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Any, Iterator
+from typing import Any, Iterator, Sequence
 
 import numpy as np
 
@@ -17,7 +17,7 @@ class DefaultSequentialModel:
 
     """
 
-    model: list[Surface | Gap]
+    model: Sequence[Surface | Gap]
 
     def __post_init__(self):
         # Ensure that the first and last elements are object and image surfaces.

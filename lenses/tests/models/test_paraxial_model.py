@@ -9,11 +9,11 @@ from ezray.core.general_ray_tracing import (
     Gap,
     Image,
     Object,
-    Surface,
     SurfaceType,
 )
 from ezray.models.paraxial_model import ParaxialModel, propagate
 from ezray.models.sequential_model import DefaultSequentialModel
+from ezray.specs.fields import Angle
 
 
 @pytest.fixture
@@ -31,11 +31,13 @@ def convexplano_lens():
     gap_2 = Gap(refractive_index=1.0, thickness=46.59874)
     surf_3 = Image()
 
+    fields = {Angle(angle=0.0), Angle(angle=5.0)}
+
     sequential_model = DefaultSequentialModel(
         [surf_0, gap_0, surf_1, gap_1, surf_2, gap_2, surf_3]
     )
 
-    return ParaxialModel(sequential_model)
+    return ParaxialModel(sequential_model, fields)
 
 
 def test_propagate():

@@ -17,6 +17,7 @@ from ezray.core.general_ray_tracing import (
     SurfaceType,
     Toric,
 )
+from ezray.specs.fields import FieldSpec
 
 """A Ns x Nr x 2 array of ray trace results.
 
@@ -69,6 +70,7 @@ class Pupil(TypedDict):
 @dataclass(frozen=True)
 class ParaxialModel:
     sequential_model: SequentialModel
+    fields: set[FieldSpec]
 
     @cached_property
     def aperture_stop(self) -> int:

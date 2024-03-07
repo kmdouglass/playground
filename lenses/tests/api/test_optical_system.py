@@ -1,4 +1,4 @@
-from ezray import OpticalSystem
+from ezray import Axis, OpticalSystem
 from ezray.specs.aperture import EntrancePupil
 from ezray.specs.fields import Angle, ObjectHeight
 from ezray.specs.gaps import Gap
@@ -15,7 +15,11 @@ def aperture():
 
 @pytest.fixture
 def fields():
-    return [Angle(angle=0.0), Angle(angle=5.0)]
+    return [
+        Angle(wavelength=0.5876, angle=0.0),
+        Angle(wavelength=0.647, angle=0.0),
+        Angle(wavelength=0.5876, angle=5.0),
+    ]
 
 
 @pytest.fixture
@@ -42,3 +46,14 @@ def test_optical_system_fields_must_be_same_type(aperture, gaps, surfaces):
 
     with pytest.raises(ValueError):
         OpticalSystem(aperture, fields, gaps, surfaces)
+
+
+def test_optical_system_paraxial_models(aperture, fields, gaps, surfaces):
+    system = OpticalSystem(aperture, fields, gaps, surfaces)
+
+    assert system.paraxial_models.keys() == {
+        (0.5876, Axis.X),
+        (0.647, Axis.X),
+        (0.5876, Axis.Y),
+        (0.647, Axis.Y),
+    }
