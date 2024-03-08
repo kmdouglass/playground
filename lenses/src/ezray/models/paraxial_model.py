@@ -72,6 +72,7 @@ class Pupil(TypedDict):
 class ParaxialModel:
     sequential_model: SequentialModel
     fields: set[FieldSpec]
+    object_space_telecentric: bool = False
 
     @cached_property
     def aperture_stop(self) -> int:
@@ -95,7 +96,7 @@ class ParaxialModel:
     @cached_property
     def back_focal_length(self) -> float:
         """Returns the back focal length of the system."""
-        results = self.focal_ray
+        results = self.parallel_ray
 
         bfl = z_intercept(results[-2])[0]
         return bfl
@@ -110,15 +111,13 @@ class ParaxialModel:
         z = self.z_coordinate(len(self.sequential_model.surfaces) - 2)
 
         return z + delta
-    
+
     @cached_property
     def chief_ray(self) -> RayTraceResults:
-        """Returns the chief ray through the system.
-
-        """
+        """Returns the chief ray through the system."""
         # TODO: Enforce telecentricity through a system-level constraint
         enp_loc: float = self.entrance_pupil["location"]
-        obj_loc: float = 0 if self._is_obj_at_inf() else self.z_coordinate(0)
+        obj_loc: float = 0 if self._is_obj_at_inf else self.z_coordinate(0)
         sep = enp_loc - obj_loc
         match max_field := max(abs(field) for field in self.fields):
             case Angle(angle=angle):
@@ -129,7 +128,7 @@ class ParaxialModel:
                 paraxial_angle = -height / sep
             case _:
                 raise ValueError(f"Unknown field type: {max_field}")
-            
+
         ray = RayFactory.ray(height=height, angle=paraxial_angle)
 
         return trace(ray, self.sequential_model)
@@ -137,7 +136,7 @@ class ParaxialModel:
     @cached_property
     def effective_focal_length(self) -> float:
         """Returns the effective focal length of the system."""
-        results = self.focal_ray
+        results = self.parallel_ray
 
         y_1 = results[1, 0, 0]
         u_final = results[-2, 0, 1]
@@ -146,6 +145,9 @@ class ParaxialModel:
 
     @cached_property
     def entrance_pupil(self) -> Pupil:
+        if self.object_space_telecentric:
+            return {"location": np.inf, "semi_diameter": np.nan}
+
         # Aperture stop is first surface
         if self.aperture_stop == 1:
             return {
@@ -154,16 +156,18 @@ class ParaxialModel:
             }
 
         # Trace a ray from the aperture stop backwards through the system
-        steps = self.sequential_model[: self.aperture_stop]
-        ray = RayFactory.ray(height=0.0, angle=1.0)
+        steps = self.sequential_model[: self.aperture_stop - 1]
+        ray = RayFactory.ray(height=0.0, angle=-1.0)  # -1 to trace backwards
 
         results = trace(ray, steps, reverse=True)
 
-        location = z_intercept(results[-1])  # Relative to the first surface
+        location = z_intercept(results[-1]).item()  # Relative to the first surface
 
         # Propagate marginal ray to the entrance pupil
         distance = (
-            location if self._is_obj_at_inf else self.gaps[0].thickness + location
+            location
+            if self._is_obj_at_inf
+            else self.sequential_model.gaps[0].thickness + location
         )
         semi_diameter = propagate(self.marginal_ray[0, 0, :], distance)[0, 0]
 
@@ -199,8 +203,7 @@ class ParaxialModel:
         """Returns the front focal length of the system."""
         results = self.reversed_focal_ray
 
-        # negative sign because the ray is traced in the reverse direction
-        ffl = -z_intercept(results[-1])[0]
+        ffl = z_intercept(results[-1])[0]
         return ffl
 
     @cached_property
@@ -208,14 +211,6 @@ class ParaxialModel:
         """Returns the z-coordinate of the front principal plane."""
 
         return self.front_focal_length + self.effective_focal_length
-
-    @cached_property
-    def focal_ray(self) -> RayTraceResults:
-        """A ray used to compute back focal lengths."""
-        # Ray parallel to the optical axis at a height of 1.
-        ray = RayFactory.ray(height=1.0, angle=0.0)
-
-        return trace(ray, self.sequential_model)
 
     @cached_property
     def marginal_ray(self) -> RayTraceResults:
@@ -236,6 +231,14 @@ class ParaxialModel:
         return pmr * scale_factor
 
     @cached_property
+    def parallel_ray(self) -> RayTraceResults:
+        """A ray used to compute back focal lengths."""
+        # Ray parallel to the optical axis at a height of 1.
+        ray = RayFactory.ray(height=1.0, angle=0.0)
+
+        return trace(ray, self.sequential_model)
+
+    @cached_property
     def pseudo_marginal_ray(self) -> RayTraceResults:
         """Traces a pseudo-marginal ray through the system."""
 
@@ -251,7 +254,6 @@ class ParaxialModel:
     @cached_property
     def reversed_focal_ray(self) -> RayTraceResults:
         """A ray used to compute front focal lengths."""
-        # Ray parallel to the optical axis at a height of 1.
         ray = RayFactory.ray(height=1.0, angle=0.0)
 
         return trace(ray, self.sequential_model, reverse=True)
@@ -269,6 +271,7 @@ class ParaxialModel:
 
         return sum(gap.thickness for gap in self.sequential_model.gaps[1:surface_id])
 
+    @cached_property
     def _is_obj_at_inf(self) -> bool:
         return np.isinf(self.sequential_model.gaps[0].thickness)
 
@@ -281,7 +284,7 @@ def surface_rtm_mapping(
         match surface:
             case Conic(surface_type=SurfaceType.REFRACTING):
                 return lambda t, R, n0, n1: inv(
-                    np.array([[1, 0], [(n0 - n1) / R / n0, n1 / n0]])
+                    np.array([[1, 0], [(n1 - n0) / R / n0, n1 / n0]])
                 ) @ np.array(
                     [[1, -t], [0, 1]]
                 )  # n0 and n1 are swapped!
@@ -291,6 +294,10 @@ def surface_rtm_mapping(
                 )
             case Image():
                 return lambda *_: np.array([[1, 0], [0, 1]])
+            case Stop():
+                return lambda t, *_: np.array([[1, 0], [0, 1]]) @ np.array(
+                    [[1, -t], [0, 1]]
+                )
             case Object():
                 return lambda t, *_: np.array([[1, 0], [0, 1]]) @ np.array(
                     [[1, -t], [0, 1]]
@@ -319,6 +326,8 @@ def surface_rtm_mapping(
                 [[1, t], [0, 1]]
             )
         case Image():
+            return lambda t, *_: np.array([[1, 0], [0, 1]]) @ np.array([[1, t], [0, 1]])
+        case Stop():
             return lambda t, *_: np.array([[1, 0], [0, 1]]) @ np.array([[1, t], [0, 1]])
         case Object():
             return lambda *_: np.array([[1, 0], [0, 1]])

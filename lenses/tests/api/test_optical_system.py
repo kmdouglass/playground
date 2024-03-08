@@ -57,3 +57,10 @@ def test_optical_system_paraxial_models(aperture, fields, gaps, surfaces):
         (0.5876, Axis.Y),
         (0.647, Axis.Y),
     }
+
+
+def test_optical_system_field_angles_and_telecentric(aperture, fields, gaps, surfaces):
+    fields = [Angle(angle=0.0), Angle(angle=5.0)]
+
+    with pytest.raises(ValueError):
+        OpticalSystem(aperture, fields, gaps, surfaces, object_space_telecentric=True)

@@ -6,6 +6,7 @@ from ezray.core.general_ray_tracing import Gap, SequentialModel, Surface
 from ezray.models.sequential_model import DefaultSequentialModel
 from ezray.models.paraxial_model import ParaxialModel
 from ezray.specs import ApertureSpec, FieldSpec, GapSpec, SurfaceSpec
+from ezray.specs.fields import Angle
 
 
 class Axis(Enum):
@@ -25,6 +26,7 @@ class OpticalSystem:
     fields: InitVar[Sequence[FieldSpec]]
     gaps: InitVar[Sequence[GapSpec]]
     surfaces: InitVar[Sequence[SurfaceSpec]]
+    object_space_telecentric: bool = False
 
     paraxial_models: ParaxialModels = field(init=False)
     sequential_model: SequentialModel = field(init=False)
@@ -36,7 +38,7 @@ class OpticalSystem:
         gaps: Sequence[GapSpec],
         surfaces: Sequence[SurfaceSpec],
     ) -> None:
-        OpticalSystem.validate_specs(aperture, fields, gaps, surfaces)
+        self.validate_inputs(aperture, fields, gaps, surfaces)
 
         surface_gap_sequence = self._surface_gap_sequence(gaps, surfaces)
 
@@ -66,7 +68,9 @@ class OpticalSystem:
 
         return {
             (wavelength, axis): ParaxialModel(
-                self.sequential_model, fields_by_wavelength[wavelength]
+                self.sequential_model,
+                fields_by_wavelength[wavelength],
+                object_space_telecentric=self.object_space_telecentric,
             )
             for wavelength in wavelengths
             for axis in [Axis.X, Axis.Y]
@@ -85,8 +89,8 @@ class OpticalSystem:
             core_surfaces[-1]
         ]
 
-    @staticmethod
-    def validate_specs(
+    def validate_inputs(
+        self,
         aperture: ApertureSpec,
         fields: Sequence[FieldSpec],
         gaps: Sequence[GapSpec],
@@ -100,3 +104,8 @@ class OpticalSystem:
         field_types = {type(field) for field in fields}
         if len(field_types) != 1:
             raise ValueError(f"All fields must be of the same type. Got: {field_types}")
+
+        if field_types.pop() == Angle and self.object_space_telecentric:
+            raise ValueError(
+                "Object space telecentric systems cannot have Angle-type fields"
+            )

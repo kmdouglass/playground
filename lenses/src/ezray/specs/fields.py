@@ -42,6 +42,8 @@ class BaseField(ABC):
 
 @dataclass(frozen=True, kw_only=True)
 class Angle(BaseField):
+    """Specifies the chief ray angle in object space."""
+
     angle: float
 
     def __abs__(self) -> Self:
