@@ -4,7 +4,14 @@ from typing import Any, Iterator, Sequence
 
 import numpy as np
 
-from ezray.core.general_ray_tracing import Gap, Image, Object, Surface, TracingStep
+from ezray.core.general_ray_tracing import (
+    Gap,
+    Image,
+    Object,
+    Surface,
+    SurfaceType,
+    TracingStep,
+)
 
 
 @dataclass(frozen=True)
@@ -67,9 +74,17 @@ class DefaultSequentialModel:
         return np.isinf(self.gaps[0].thickness)
 
     @cached_property
-    def surfaces(self) -> list[Surface]:
-        return [element for element in self.model if isinstance(element, Surface)]
-
-    @cached_property
     def gaps(self) -> list[Gap]:
         return [element for element in self.model if isinstance(element, Gap)]
+
+    @cached_property
+    def last_op_surface_id(self) -> Surface:
+        """Returns the id of the last surface that is not a no-op surface."""
+        for surf_id in reversed(range(len(self.surfaces))):
+            if self.surfaces[surf_id].surface_type != SurfaceType.NOOP:
+                return surf_id
+        raise ValueError("The system has no non-no-op surfaces.")
+
+    @cached_property
+    def surfaces(self) -> list[Surface]:
+        return [element for element in self.model if isinstance(element, Surface)]

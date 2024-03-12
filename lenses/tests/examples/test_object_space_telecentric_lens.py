@@ -15,13 +15,13 @@ def test_aperture_stop(pmid):
     )
 
 
-# @pytest.mark.parametrize("pmid", PARAXIAL_PROPERTIES.keys())
-# def test_back_focal_length(pmid):
-#     assert np.allclose(
-#         system.paraxial_models[pmid].back_focal_length,
-#         PARAXIAL_PROPERTIES[pmid]["back_focal_length"],
-#         atol=ATOL,
-#     )
+@pytest.mark.parametrize("pmid", PARAXIAL_PROPERTIES.keys())
+def test_back_focal_length(pmid):
+    assert np.allclose(
+        system.paraxial_models[pmid].back_focal_length,
+        PARAXIAL_PROPERTIES[pmid]["back_focal_length"],
+        atol=ATOL,
+    )
 
 
 # @pytest.mark.parametrize("pmid", PARAXIAL_PROPERTIES.keys())

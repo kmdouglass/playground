@@ -80,9 +80,13 @@ class SequentialModel(Sequence[TracingStep]):
     """A sequence of gaps and surfaces that is required at each ray tracing step."""
 
     @property
-    def surfaces(self) -> list[Surface]:
-        """Return a list of surfaces in the model."""
-
-    @property
     def gaps(self) -> list[Gap]:
         """Return a list of gaps in the model."""
+
+    @property
+    def last_op_surface_id(self) -> int:
+        """Return the id of the last surface that is not a noop surface."""
+
+    @property
+    def surfaces(self) -> list[Surface]:
+        """Return a list of surfaces in the model."""

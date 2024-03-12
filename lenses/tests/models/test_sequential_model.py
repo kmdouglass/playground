@@ -7,6 +7,7 @@ from ezray.core.general_ray_tracing import (
     Gap,
     Image,
     Object,
+    Stop,
     Surface,
     SurfaceType,
 )
@@ -179,3 +180,27 @@ def test_sequential_model_get_item(convexplano_lens):
         convexplano_lens.model[6],
         None,
     )
+
+
+def test_sequential_model_last_op_surface_id():
+    surf_0 = Object()
+    gap_0 = Gap(refractive_index=1.0, thickness=inf)
+    surf_1 = Conic(
+        semi_diameter=25,
+        radius_of_curvature=-25.8,
+        surface_type=SurfaceType.REFRACTING,
+    )
+    gap_1 = Gap(refractive_index=1.515, thickness=5.3)
+    surf_2 = Conic(
+        semi_diameter=25, surface_type=SurfaceType.REFRACTING
+    )  # last non-noop surface
+    gap_2 = Gap(refractive_index=1.0, thickness=46.59874)
+    surf_3 = Stop(semi_diameter=5.0)
+    gap_3 = Gap(refractive_index=1.0, thickness=5)
+    surf_4 = Image()
+
+    system = DefaultSequentialModel(
+        [surf_0, gap_0, surf_1, gap_1, surf_2, gap_2, surf_3, gap_3, surf_4]
+    )
+
+    assert system.last_op_surface_id == 2

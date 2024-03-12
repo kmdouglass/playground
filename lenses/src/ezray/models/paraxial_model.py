@@ -98,7 +98,8 @@ class ParaxialModel:
         """Returns the back focal length of the system."""
         results = self.parallel_ray
 
-        bfl = z_intercept(results[-2])[0]
+        last_noop_surface_id = self.sequential_model.last_op_surface_id
+        bfl = z_intercept(results[last_noop_surface_id])[0]
         return bfl
 
     @cached_property
@@ -115,7 +116,6 @@ class ParaxialModel:
     @cached_property
     def chief_ray(self) -> RayTraceResults:
         """Returns the chief ray through the system."""
-        # TODO: Enforce telecentricity through a system-level constraint
         enp_loc: float = self.entrance_pupil["location"]
         obj_loc: float = 0 if self._is_obj_at_inf else self.z_coordinate(0)
         sep = enp_loc - obj_loc
@@ -201,7 +201,7 @@ class ParaxialModel:
     @cached_property
     def front_focal_length(self) -> float:
         """Returns the front focal length of the system."""
-        results = self.reversed_focal_ray
+        results = self.reversed_parallel_ray
 
         ffl = z_intercept(results[-1])[0]
         return ffl
@@ -252,7 +252,7 @@ class ParaxialModel:
         return trace(ray, self.sequential_model)
 
     @cached_property
-    def reversed_focal_ray(self) -> RayTraceResults:
+    def reversed_parallel_ray(self) -> RayTraceResults:
         """A ray used to compute front focal lengths."""
         ray = RayFactory.ray(height=1.0, angle=0.0)
 
