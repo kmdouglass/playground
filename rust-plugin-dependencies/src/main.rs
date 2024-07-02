@@ -14,10 +14,6 @@ struct Plugin1 {}
 
 struct Plugin2 {}
 
-struct System {
-    plugins: HashMap<String, Box<dyn Plugin>>,
-}
-
 impl Plugin for Plugin1 {
     fn do_something(&self) {
         println!("ConcretePlugin1");
@@ -78,13 +74,11 @@ fn main() {
         }
     }
 
-    let mut system = System { plugins: plugins };
-
     // Assert Plugin1 and Plugin2 are in the system
-    assert!(system.plugins.contains_key("Plugin1"));
-    assert!(system.plugins.contains_key("Plugin2"));
+    assert!(plugins.contains_key("Plugin1"));
+    assert!(plugins.contains_key("Plugin2"));
 
-    for (_, plugin) in system.plugins.iter() {
+    for (_, plugin) in plugins.iter() {
         // Call do something only if the plugin is of type Plugin2
         if plugin.as_any().is::<Plugin2>() {
             plugin.do_something();
