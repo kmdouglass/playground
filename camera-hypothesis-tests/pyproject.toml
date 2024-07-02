@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "hypothecam"
+version = "0.1.0"
+description = "Hypothesis testing for camera simulations"
+authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "hypothecam", from = "src" }
+]
+
+[tool.poetry.dependencies]
+jupyter = "*"
+matplotlib = "*"
+numpy = "*"
+python = "^3.11"
+
+[tool.poetry.dev-dependencies]
+black = "*"
+pytest = "*"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
