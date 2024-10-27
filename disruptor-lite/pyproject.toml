@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "disruptor-lite"
+version = "0.1.0"
+description = "Playing around with the disruptor pattern in Python"
+authors = ["Kyle M. Douglass <kyle.m.douglass@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "disrupt", from = "src" }
+]
+
+[tool.poetry.scripts]
+disruptor = "disrupt.main:main"
+
+[tool.poetry.dependencies]
+py-disruptor = { git = "git@github.com:pulsepointinc/py-disruptor.git" }
+python = "^3.13"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
