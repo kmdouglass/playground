@@ -8,16 +8,21 @@
 # ///
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import numpy as np
 
+type Fields = list[dict[str, Any]]
+
 
 DATA_FILE: Path = Path(__file__).parent / "cherry_results.json"
 WAVELENGTHS: list[float] = [0.4861, 0.5876, 0.6563]  # Fraunhofer F, d, and C lines
-FIELDS: list[float] = [0.0, 5.0]
+FIELDS: list[dict[str, Any]] = [
+    {"Angle": {"angle": 0.0, "pupil_sampling": {"SquareGrid": {"spacing": 0.1}}}},
+    {"Angle": {"angle": 5.0, "pupil_sampling": {"SquareGrid": {"spacing": 0.1}}}},
+]
 AXES: list[str] = ["Y"]
 
 
@@ -117,7 +122,7 @@ def read_results_file(file_path: Path) -> list[RayTraceResults]:
 
 def determine_layout(
     wavelengths: list[float],
-    field_angles: list[float],
+    field_angles: Fields,
     axes: list[str],
 ) -> tuple[int, int, int]:
     """Determines the layout of the results based on wavelengths, field angles, and axis.
@@ -186,11 +191,23 @@ def bounding_box(
     return min_x, max_x, min_y, max_y
 
 
+def sort_fields(fields: Fields) -> Fields:
+    """Sorts the fields based on the angle."""
+    sorted_fields = sorted(fields, key=lambda x: x["Angle"]["angle"])
+    return sorted_fields
+
+
+def display_field(field: dict[str, Any]) -> str:
+    """Returns a string representation of the field."""
+    angle = field["Angle"]["angle"]
+    return f"{angle:.2f} deg"
+
+
 def plot_spot_diagram(
     positions: np.ndarray,
     ax: Axes,
     wavelength: Optional[float] = None,
-    field: Optional[float] = None,
+    field: Optional[dict[str, Any]] = None,
     bbox: Optional[tuple[float, float, float, float]] = None,
 ) -> None:
     ax.scatter(positions[:, 0], positions[:, 1], s=1)
@@ -200,7 +217,7 @@ def plot_spot_diagram(
     ax.grid(True)
 
     if wavelength is not None and field is not None:
-        ax.set_title(f"Wavelength: {wavelength:.4f} µm, Field: {field:.2f} deg")
+        ax.set_title(f"Wavelength: {wavelength:.4f} µm, Field: {display_field(field)}")
 
     if bbox is not None:
         min_x, max_x, min_y, max_y = bbox
@@ -211,11 +228,11 @@ def plot_spot_diagram(
 def plot_spot_diagrams(
     results: list[RayTraceResults],
     wavelengths: list[float],
-    fields: list[float],
+    fields: Fields,
     axes: list[str],
 ) -> None:
     wavelengths_sorted = sorted(wavelengths)
-    fields_sorted = sorted(fields)
+    fields_sorted = sort_fields(fields)
     axes_sorted = sorted(axes)
 
     num_rows, num_columns, _ = determine_layout(
@@ -252,7 +269,7 @@ def plot_spot_diagrams(
 def main(
     file_path: Path,
     wavelengths: list[float],
-    fields: list[float],
+    fields: Fields,
     axes: list[str],
 ) -> None:
     results = read_results_file(file_path)
