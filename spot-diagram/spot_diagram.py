@@ -16,7 +16,7 @@ import numpy as np
 
 
 DATA_FILE: Path = Path(__file__).parent / "cherry_results.json"
-WAVELENGTHS: list[float] = [0.4861, 0.5876, 0.6563]  # Fraunhofer F, C, and H lines
+WAVELENGTHS: list[float] = [0.4861, 0.5876, 0.6563]  # Fraunhofer F, d, and C lines
 FIELDS: list[float] = [0.0, 5.0]
 AXES: list[str] = ["Y"]
 
