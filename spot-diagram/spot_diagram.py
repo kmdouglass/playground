@@ -105,7 +105,6 @@ def convert_rays_to_numpy_arrays(rays: list[Ray]) -> tuple[np.ndarray, np.ndarra
     return positions, directions
 
 
-
 # ----
 # Main
 def read_results_file(file_path: Path) -> list[RayTraceResults]:
