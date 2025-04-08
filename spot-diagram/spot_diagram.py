@@ -252,9 +252,9 @@ def plot_spot_diagrams(
 
 def main(
     file_path: Path,
-    wavelengths: list[float] = WAVELENGTHS,
-    fields: list[float] = FIELDS,
-    axes: list[str] = AXES,
+    wavelengths: list[float],
+    fields: list[float],
+    axes: list[str],
 ) -> None:
     results = read_results_file(file_path)
     plot_spot_diagrams(results, wavelengths, fields, axes)
@@ -262,4 +262,4 @@ def main(
 
 if __name__ == "__main__":
     plt.switch_backend("QtAgg")
-    main(DATA_FILE)
+    main(DATA_FILE, WAVELENGTHS, FIELDS, AXES)
