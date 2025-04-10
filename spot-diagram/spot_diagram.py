@@ -8,20 +8,31 @@
 # ///
 import json
 from pathlib import Path
-from typing import Any, Optional, TypedDict
+from typing import Optional, Sequence, TypedDict
 
 from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import numpy as np
 
-type Fields = list[dict[str, Any]]
+
+class Specs(TypedDict):
+    value: float
+    units: str
+
+
+class Field(Specs):
+    type: str
 
 
 DATA_FILE: Path = Path(__file__).parent / "cherry_results.json"
-WAVELENGTHS: list[float] = [0.4861, 0.5876, 0.6563]  # Fraunhofer F, d, and C lines
-FIELDS: list[dict[str, Any]] = [
-    {"Angle": {"angle": 0.0, "pupil_sampling": {"SquareGrid": {"spacing": 0.1}}}},
-    {"Angle": {"angle": 5.0, "pupil_sampling": {"SquareGrid": {"spacing": 0.1}}}},
+WAVELENGTHS: list[Specs] = [
+    {"value": 0.4861, "units": "µm"},
+    {"value": 0.5876, "units": "µm"},
+    {"value": 0.6563, "units": "µm"},
+] # Fraunhofer F, d, and C lines
+FIELDS: list[Field] = [
+    {"type": "Angle", "value": 0.0, "units": "deg"},
+    {"type": "Angle", "value": 5.0, "units": "deg"},
 ]
 AXES: list[str] = ["Y"]
 
@@ -121,8 +132,8 @@ def read_results_file(file_path: Path) -> list[RayTraceResults]:
 
 
 def determine_layout(
-    wavelengths: list[float],
-    field_angles: Fields,
+    wavelengths: list[Specs],
+    field_angles: list[Specs],
     axes: list[str],
 ) -> tuple[int, int, int]:
     """Determines the layout of the results based on wavelengths, field angles, and axis.
@@ -191,23 +202,25 @@ def bounding_box(
     return min_x, max_x, min_y, max_y
 
 
-def sort_fields(fields: Fields) -> Fields:
+def sort_specs(specs: Sequence[Specs]) -> list[Specs]:
     """Sorts the fields based on the angle."""
-    sorted_fields = sorted(fields, key=lambda x: x["Angle"]["angle"])
-    return sorted_fields
+    sorted_specs = sorted(specs, key=lambda x: x["value"])
+    return sorted_specs
 
 
-def display_field(field: dict[str, Any]) -> str:
+def display_spec(spec: Specs, format: str = "0.2f") -> str:
     """Returns a string representation of the field."""
-    angle = field["Angle"]["angle"]
-    return f"{angle:.2f} deg"
+    value = spec["value"]
+    units = spec["units"]
+    
+    return f"{value:{format}} {units}"
 
 
 def plot_spot_diagram(
     positions: np.ndarray,
     ax: Axes,
-    wavelength: Optional[float] = None,
-    field: Optional[dict[str, Any]] = None,
+    wavelength: Optional[Specs] = None,
+    field: Optional[Specs] = None,
     bbox: Optional[tuple[float, float, float, float]] = None,
 ) -> None:
     ax.scatter(positions[:, 0], positions[:, 1], s=1)
@@ -217,7 +230,7 @@ def plot_spot_diagram(
     ax.grid(True)
 
     if wavelength is not None and field is not None:
-        ax.set_title(f"Wavelength: {wavelength:.4f} µm, Field: {display_field(field)}")
+        ax.set_title(f"Wavelength: {display_spec(wavelength, "0.4f")} µm, Field: {display_spec(field)}")
 
     if bbox is not None:
         min_x, max_x, min_y, max_y = bbox
@@ -227,12 +240,12 @@ def plot_spot_diagram(
 
 def plot_spot_diagrams(
     results: list[RayTraceResults],
-    wavelengths: list[float],
-    fields: Fields,
+    wavelengths: list[Specs],
+    fields: list[Field],
     axes: list[str],
 ) -> None:
-    wavelengths_sorted = sorted(wavelengths)
-    fields_sorted = sort_fields(fields)
+    wavelengths_sorted = sort_specs(wavelengths)
+    fields_sorted = sort_specs(fields)
     axes_sorted = sorted(axes)
 
     num_rows, num_columns, _ = determine_layout(
@@ -268,8 +281,8 @@ def plot_spot_diagrams(
 
 def main(
     file_path: Path,
-    wavelengths: list[float],
-    fields: Fields,
+    wavelengths: list[Specs],
+    fields: list[Field],
     axes: list[str],
 ) -> None:
     results = read_results_file(file_path)
