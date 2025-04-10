@@ -35,6 +35,7 @@ FIELDS: list[Field] = [
     {"type": "Angle", "value": 5.0, "units": "deg"},
 ]
 AXES: list[str] = ["Y"]
+IMAGE_SPACE_NAS: list[float] = [0.245166649, 0.242702895, 0.241607739]
 
 
 class Ray(TypedDict):
@@ -222,6 +223,7 @@ def plot_spot_diagram(
     wavelength: Optional[Specs] = None,
     field: Optional[Specs] = None,
     bbox: Optional[tuple[float, float, float, float]] = None,
+    image_space_na: Optional[float] = None,
 ) -> None:
     ax.scatter(positions[:, 0], positions[:, 1], s=1)
     ax.set_xlabel("X Position (mm)")
@@ -237,12 +239,16 @@ def plot_spot_diagram(
         ax.set_xlim(min_x, max_x)
         ax.set_ylim(min_y, max_y)
 
+    if image_space_na is not None:
+        print("Image space NA is not implemented yet.")
+
 
 def plot_spot_diagrams(
     results: list[RayTraceResults],
     wavelengths: list[Specs],
     fields: list[Field],
     axes: list[str],
+    image_space_nas: list[float],
 ) -> None:
     wavelengths_sorted = sort_specs(wavelengths)
     fields_sorted = sort_specs(fields)
@@ -274,7 +280,7 @@ def plot_spot_diagrams(
             )
             rays_at_image_plane = get_rays_at_image_plane(bundle)
             positions, _ = convert_rays_to_numpy_arrays(rays_at_image_plane)
-            plot_spot_diagram(positions, ax, wavelength, field, bbox=bbox)
+            plot_spot_diagram(positions, ax, wavelength, field, bbox=bbox, image_space_na=image_space_nas[i])
 
     plt.show()
 
@@ -284,11 +290,12 @@ def main(
     wavelengths: list[Specs],
     fields: list[Field],
     axes: list[str],
+    image_space_nas: list[float],
 ) -> None:
     results = read_results_file(file_path)
-    plot_spot_diagrams(results, wavelengths, fields, axes)
+    plot_spot_diagrams(results, wavelengths, fields, axes, image_space_nas)
 
 
 if __name__ == "__main__":
     plt.switch_backend("QtAgg")
-    main(DATA_FILE, WAVELENGTHS, FIELDS, AXES)
+    main(DATA_FILE, WAVELENGTHS, FIELDS, AXES, IMAGE_SPACE_NAS)
