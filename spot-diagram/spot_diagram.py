@@ -11,21 +11,22 @@ from pathlib import Path
 from typing import Optional, Sequence, TypedDict
 
 from matplotlib.axes import Axes
+from matplotlib.patches import Circle
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-class Specs(TypedDict):
+class Spec(TypedDict):
     value: float
     units: str
 
 
-class Field(Specs):
+class Field(Spec):
     type: str
 
 
 DATA_FILE: Path = Path(__file__).parent / "cherry_results.json"
-WAVELENGTHS: list[Specs] = [
+WAVELENGTHS: list[Spec] = [
     {"value": 0.4861, "units": "µm"},
     {"value": 0.5876, "units": "µm"},
     {"value": 0.6563, "units": "µm"},
@@ -67,21 +68,37 @@ def get_number_of_rays(bundle: RayBundle) -> int:
     return len(rays) // num_surfaces
 
 
-def get_rays_at_surface(bundle: RayBundle, surface_id) -> list[Ray]:
+def get_rays_at_surface(
+    bundle: RayBundle,
+    surface_id,
+    raise_on_any_terminated: bool = False
+) -> list[Ray]:
     num_rays = get_number_of_rays(bundle)
     rays = bundle["rays"][surface_id * num_rays : (surface_id + 1) * num_rays]
+
+    terminated = bundle["terminated"]
+    if raise_on_any_terminated:
+        if any(terminated):
+            raise ValueError(
+                "Some rays are terminated. Cannot get rays at surface."
+            )
+    else:
+        rays = [
+            ray for ray, terminated in zip(rays, terminated) if not terminated
+        ]
 
     return rays
 
 
-def get_rays_at_image_plane(bundle: RayBundle) -> list[Ray]:
+def get_rays_at_image_plane(bundle: RayBundle, raise_on_terminated: bool = False) -> list[Ray]:
     num_surfaces = bundle["num_surfaces"]
-    rays_at_image_plane = get_rays_at_surface(bundle, num_surfaces - 1)
+    rays_at_image_plane = get_rays_at_surface(bundle, num_surfaces - 1, raise_on_terminated)
 
     return rays_at_image_plane
 
 
-def get_ray_bundle_by_ids(
+def get_bundle_by_ids(
+    bundle_type: str,
     results: list[RayTraceResults],
     wavelength_id: int,
     field_id: int,
@@ -93,11 +110,29 @@ def get_ray_bundle_by_ids(
             and result["field_id"] == field_id
             and result["axis"] == axis
         ):
-            return result["ray_bundle"]
+            return result[bundle_type]
 
     raise ValueError(
         f"Ray bundle with wavelength_id={wavelength_id}, field_id={field_id}, axis={axis} not found."
     )
+
+
+def get_ray_bundle_by_ids(
+    results: list[RayTraceResults],
+    wavelength_id: int,
+    field_id: int,
+    axis: str,
+) -> RayBundle:
+    return get_bundle_by_ids("ray_bundle", results, wavelength_id, field_id, axis)
+
+
+def get_chief_ray_by_ids(
+    results: list[RayTraceResults],
+    wavelength_id: int,
+    field_id: int,
+    axis: str,
+) -> RayBundle:
+    return get_bundle_by_ids("chief_ray", results, wavelength_id, field_id, axis)
 
 
 # -----------
@@ -128,13 +163,13 @@ def read_results_file(file_path: Path) -> list[RayTraceResults]:
     with open(file_path, "r") as file:
         data = json.load(file)
 
-    results: list[RayTraceResults] = data["rayTraceView"]["results"] 
+    results: list[RayTraceResults] = data["rayTraceView"]["results"]
     return results
 
 
 def determine_layout(
-    wavelengths: list[Specs],
-    field_angles: list[Specs],
+    wavelengths: list[Spec],
+    field_angles: list[Spec],
     axes: list[str],
 ) -> tuple[int, int, int]:
     """Determines the layout of the results based on wavelengths, field angles, and axis.
@@ -203,13 +238,13 @@ def bounding_box(
     return min_x, max_x, min_y, max_y
 
 
-def sort_specs(specs: Sequence[Specs]) -> list[Specs]:
+def sort_specs(specs: Sequence[Spec]) -> list[Spec]:
     """Sorts the fields based on the angle."""
     sorted_specs = sorted(specs, key=lambda x: x["value"])
     return sorted_specs
 
 
-def display_spec(spec: Specs, format: str = "0.2f") -> str:
+def display_spec(spec: Spec, format: str = "0.2f") -> str:
     """Returns a string representation of the field."""
     value = spec["value"]
     units = spec["units"]
@@ -217,13 +252,24 @@ def display_spec(spec: Specs, format: str = "0.2f") -> str:
     return f"{value:{format}} {units}"
 
 
+def airy_disk_radius(
+    wavelength: Spec,
+    na: float,
+) -> Spec:
+    value = wavelength["value"]
+    units = wavelength["units"]
+    
+    return {"value": 0.61 * value / na, "units": units}
+
+
 def plot_spot_diagram(
     positions: np.ndarray,
     ax: Axes,
-    wavelength: Optional[Specs] = None,
-    field: Optional[Specs] = None,
+    wavelength: Optional[Spec] = None,
+    field: Optional[Spec] = None,
     bbox: Optional[tuple[float, float, float, float]] = None,
     image_space_na: Optional[float] = None,
+    chief_ray_position: Optional[np.ndarray] = None,
 ) -> None:
     ax.scatter(positions[:, 0], positions[:, 1], s=1)
     ax.set_xlabel("X Position (mm)")
@@ -239,13 +285,26 @@ def plot_spot_diagram(
         ax.set_xlim(min_x, max_x)
         ax.set_ylim(min_y, max_y)
 
-    if image_space_na is not None:
-        print("Image space NA is not implemented yet.")
+    if wavelength is not None and image_space_na is not None and chief_ray_position is not None:
+        r = airy_disk_radius(wavelength, image_space_na)
+        if r["units"] == "µm":
+            r["value"] /= 1000
+            r["units"] = "mm"
 
+        ax.add_patch(
+            Circle(
+                (chief_ray_position[0][0], chief_ray_position[0][1]),
+                r["value"],
+                color="red",
+                fill=False,
+                linestyle="--",
+                label=f"Airy Disk Radius: {display_spec(r)}"
+            )
+        )
 
 def plot_spot_diagrams(
     results: list[RayTraceResults],
-    wavelengths: list[Specs],
+    wavelengths: list[Spec],
     fields: list[Field],
     axes: list[str],
     image_space_nas: list[float],
@@ -278,22 +337,45 @@ def plot_spot_diagrams(
                 field_id=j,
                 axis=axis,
             )
+            chief_ray = get_chief_ray_by_ids(
+                results,
+                wavelength_id=i,
+                field_id=j,
+                axis=axis,
+            )
             rays_at_image_plane = get_rays_at_image_plane(bundle)
+            chief_ray_at_image_plane = get_rays_at_image_plane(chief_ray, raise_on_terminated=True)
             positions, _ = convert_rays_to_numpy_arrays(rays_at_image_plane)
-            plot_spot_diagram(positions, ax, wavelength, field, bbox=bbox, image_space_na=image_space_nas[i])
+            chief_ray_position, _ = convert_rays_to_numpy_arrays(chief_ray_at_image_plane)
+
+            plot_spot_diagram(
+                positions,
+                ax,
+                wavelength,
+                field,
+                bbox=bbox,
+                image_space_na=image_space_nas[i],
+                chief_ray_position=chief_ray_position,
+            )
 
     plt.show()
 
 
 def main(
     file_path: Path,
-    wavelengths: list[Specs],
+    wavelengths: list[Spec],
     fields: list[Field],
     axes: list[str],
     image_space_nas: list[float],
 ) -> None:
     results = read_results_file(file_path)
-    plot_spot_diagrams(results, wavelengths, fields, axes, image_space_nas)
+    plot_spot_diagrams(
+        results,
+        wavelengths,
+        fields,
+        axes,
+        image_space_nas
+    )
 
 
 if __name__ == "__main__":
