@@ -8,7 +8,7 @@
 # ///
 import json
 from pathlib import Path
-from typing import Optional, Sequence, TypedDict
+from typing import Any, Optional, Sequence, TypedDict
 
 from matplotlib.axes import Axes
 from matplotlib.patches import Circle
@@ -378,6 +378,54 @@ def main(
     )
 
 
+def ray_bundle_to_js(bundle: RayBundle, surfaceId: int) -> dict[str, Any]:
+    intersections_x = []
+    intersections_y = []
+
+    rays = get_rays_at_surface(bundle, surfaceId)
+    for ray in rays:
+        intersections_x.append(ray["pos"][0])
+        intersections_y.append(ray["pos"][1])
+
+    # remove rays whose corresponding terminated value is not 0
+    terminated = bundle["terminated"]
+    terminated_indices = [i for i, t in enumerate(terminated) if t != 0]
+    intersections_x = [x for i, x in enumerate(intersections_x) if i not in terminated_indices]
+    intersections_y = [y for i, y in enumerate(intersections_y) if i not in terminated_indices]
+
+    return {
+        "x": intersections_x,
+        "y": intersections_y,
+    }
+
+
+def transform(file_path: Path) -> None:
+    """Transform data into the format required by the React component."""
+    results = read_results_file(file_path)
+    assert results[0]["ray_bundle"]["num_surfaces"] == results[0]["chief_ray"]["num_surfaces"]
+    num_surfaces = results[0]["ray_bundle"]["num_surfaces"]
+
+    transformed_results = []
+    for result in results:
+        for surface_id in range(num_surfaces):
+            transformed_results.append({
+                "surfaceId": surface_id,
+                "wavelengthId": result["wavelength_id"],
+                "fieldId": result["field_id"],
+                "rayBundle": ray_bundle_to_js(result["ray_bundle"], surface_id),
+                "chiefRay": ray_bundle_to_js(result["chief_ray"], surface_id),
+            })
+
+    with open("transformed.json", "w") as file:
+        json.dump(transformed_results, file, indent=2)
+
+
 if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "-o":
+        transform(DATA_FILE)
+        sys.exit(0)
+
     plt.switch_backend("QtAgg")
     main(DATA_FILE, WAVELENGTHS, FIELDS, AXES, IMAGE_SPACE_NAS)
