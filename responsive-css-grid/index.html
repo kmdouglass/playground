@@ -21,5 +21,13 @@
         <div class="card">ELEVEN</div>
         <div class="card">TWELVE</div>
     </div>
+    <script>
+        function setMaxColumns(maxColumns) {
+            document.documentElement.style.setProperty('--max-columns', maxColumns);
+        }
+
+        // Override the default value for max columns to 4
+        setMaxColumns(4);
+    </script>
  </body>   
 </html>

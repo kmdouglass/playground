@@ -1,4 +1,7 @@
-html { font-size: 22px; }
+:root {
+  font-size: 22px;
+  --max-columns: 3;
+}
 body { padding: 1rem; }
 
 .card {
@@ -20,5 +23,5 @@ body { padding: 1rem; }
 }
 
 @media (min-width: 900px) {
-  .cards { grid-template-columns: repeat(3, 1fr); }
+  .cards { grid-template-columns: repeat(var(--max-columns), 1fr); }
 }
