@@ -1,6 +1,14 @@
 import numpy as np
 
-from optiland import optic
+from optiland import optic, paraxial
+
+
+def paraxial_analysis(optic: optic.Optic):
+    p = paraxial.Paraxial(optic)
+    print(f"Front focal point location: {p.F1()}")
+    print(f"Back focal point location: {p.F2()}")
+    print(f"Front principal plane location: {p.P1()}")
+    print(f"Back principal plane location: {p.P2()}")
 
 
 def main() -> None:
@@ -22,7 +30,9 @@ def main() -> None:
     system.add_field(y=0)
     system.add_wavelength(value=0.587, is_primary=True)
 
-    system.draw(num_rays=4)
+    #system.draw(num_rays=3)
+
+    paraxial_analysis(system)
 
 
 if __name__ == "__main__":
