@@ -37,8 +37,10 @@ def paraxial_analysis(optic: optic.Optic):
 
     print(f"Front focal point location: {p.F1()}")
     print(f"Front principal plane location: {p.P1()}")
+    print(f"Front focal length: {p.f1()}")
     print(f"Back focal point location: {p.F2()}")
     print(f"Back principal plane location: {p.P2()}")
+    print(f"Back focal length: {p.f2()}")
 
     assert_approx_equal(p.F1(), -49.9226, significant=4, err_msg="F1")
     assert_approx_equal(p.P1(), 0.0000, significant=4, err_msg="P1")
