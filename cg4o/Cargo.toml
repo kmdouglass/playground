@@ -1,0 +1,14 @@
+[package]
+name = "cg4o"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "cg4o"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cg4o"
+path = "src/main.rs"
+
+[dependencies]
