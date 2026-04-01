@@ -21,6 +21,31 @@ def update(x: float) -> float:
     return (x - f(x) / df(x))
 
 
+def normal_vector(r: np.ndarray, theta, C=1 / 25.0, K=0.0):
+    """The directional derivative of the residual of a conic section surface."""
+    # Prevent divide-by-zero at the origin by adding a small epsilon to r
+    r = r + 1e-8
+    A = C / np.sqrt(1 - (K + 1) * C**2 * r**2)
+
+    # Return a N x 3 array of the normal vector at each point r, theta
+    return np.vstack([-r * np.cos(theta) * A, -r * np.sin(theta) * A, np.ones_like(r)]).T
+
+
+def symmetric_normal_vector(r: np.ndarray, C=1 / 25.0, K=0.0):
+    """The directional derivative of a sphere in its symmetric implicit form.
+    
+    Assume theta = pi /2 so that we're working in the yz plane for simplicity.
+    """
+    # Prevent divide-by-zero at the origin by adding a small epsilon to r
+    r = r + 1e-8
+    y = r
+    # surface sag
+    z = C * r**2 / (1 + np.sqrt(1 - (K + 1) * C**2 * r**2))
+
+    # 2D zy plane normal vector
+    return np.vstack([2 * (z - 1 / C), 2 * y]).T
+
+
 def plot_func(x: np.ndarray, y: np.ndarray, ax):
     ax.plot(x, y)
     ax.axhline(0, color="black", linestyle="--")
@@ -142,6 +167,97 @@ def step_by_step(
         current_x = update(current_x)
 
 
+def plot_normal_vector_magnitude(
+    r_max: float = 12.5,
+    C: float = 1 / 25.8,
+    title: str = "Magnitude of the Normal Vector of the \nConvexplano Lens First Surface",
+    filename: str = "newton_raphson_normal_convexplano.png",
+    debug: bool = False
+) -> None:
+    r = np.linspace(0, r_max, 100)
+    n = normal_vector(r, theta=np.pi / 2.0, C=C)
+    mag_n = np.linalg.norm(n, axis=1)
+
+    _, ax = plt.subplots()
+    ax.set_title(title)
+
+    ax.plot(r, mag_n)
+    ax.set_xlabel("r")
+    ax.set_ylabel("$ | \\nabla F(r) | $")
+    ax.grid(True)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    if debug:
+        plt.show()
+    else:
+        output_path = OUTPUT_DIR / filename
+        plt.savefig(output_path)
+        print(f"Plot saved to {output_path}")
+
+
+def plot_circle_with_normal_vector_symmetric(C: float = 1 / 25.0, debug: bool = False) -> None:
+    """Plot a circle centered at the origin with the normal vector at equally-spaced points."""
+    r_max = 2.0
+    r = np.linspace(0, r_max, 100)
+
+    n = symmetric_normal_vector(r, C=C)
+    sag = C * r**2 / (1 + np.sqrt(1 - C**2 * r**2))
+
+    _, ax = plt.subplots()
+    ax.plot(sag, r)
+    
+    # Plot the normal vector at every 10th point for clarity
+    ax.quiver(sag[::10], r[::10], n[::10, 0], n[::10, 1], angles="xy", scale_units="xy", scale=10, color="red")
+    ax.set_aspect("equal")
+    ax.set_xlabel("z")
+    ax.set_ylabel("y")
+    ax.set_xlim(-r_max / 2.0, r_max / 2.0)
+    ax.set_ylim(0.0, r_max)
+    ax.set_title("Normal Vectors of an Implicit Symmetric Sphere in the zy Plane\n(Magnitude Scaled by 0.1 for Visibility)")
+    ax.grid(True)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    if debug:
+        plt.show()
+    else:
+        output_path = OUTPUT_DIR / "newton_raphson_normal_sphere_symmetric.png"
+        plt.savefig(output_path)
+        print(f"Plot saved to {output_path}")
+
+
+def plot_circle_with_normal_vector_saggita(C: float = 1 / 25.0, debug: bool = False) -> None:
+    """Plot a circle centered at the origin with the normal vector at equally-spaced points."""
+    r_max = 2.0
+    r = np.linspace(0, r_max, 100)
+
+    n = normal_vector(r, theta=np.pi / 2.0, C=C)
+    sag = C * r**2 / (1 + np.sqrt(1 - C**2 * r**2))
+
+    _, ax = plt.subplots()
+    ax.plot(sag, r)
+    
+    # Plot the normal vector at every 10th point for clarity
+    ax.quiver(sag[::10], r[::10], n[::10, 2], n[::10, 1], angles="xy", scale_units="xy", scale=1, color="red")
+    ax.set_aspect("equal")
+    ax.set_xlabel("z")
+    ax.set_ylabel("y")
+    ax.set_xlim(-r_max / 2.0, r_max / 2.0)
+    ax.set_ylim(0.0, r_max)
+    ax.set_title("Normal Vectors of a Sphere Defined by its Saggita in the zy Plane")
+    ax.grid(True)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    if debug:
+        plt.show()
+    else:
+        output_path = OUTPUT_DIR / "newton_raphson_normal_sphere_saggita.png"
+        plt.savefig(output_path)
+        print(f"Plot saved to {output_path}")
+
+
 def main(debug: bool):
     x = np.linspace(-2, 2, 64)
     y = f(x)
@@ -177,6 +293,16 @@ def main(debug: bool):
         x_lim=(-3.0, 3.0),
         y_lim=(-3.0, 3.0),
     )
+    plot_normal_vector_magnitude(debug=debug)
+    plot_normal_vector_magnitude(
+        r_max=2.0,
+        C = 1 / -2.2136,
+        filename="newton_raphson_normal_scan_lens.png",
+        title="Magnitude of the Normal Vector of the \nScan Lens First Surface",
+        debug=debug
+    )
+    plot_circle_with_normal_vector_symmetric(C=1 / -2.2136, debug=debug)
+    plot_circle_with_normal_vector_saggita(C=1 / -2.2136, debug=debug)
 
 
 if __name__ == "__main__":
