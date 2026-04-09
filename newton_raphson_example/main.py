@@ -17,8 +17,22 @@ def df(x):
     return 3 * x**2 - 1
 
 
-def update(x: float) -> float:
-    return (x - f(x) / df(x))
+def update(x: float, resid=f, denom=df) -> float:
+    print(f"Current x: {x:.6f}, Residual: {resid(x):.6f}, Denominator: {denom(x):.6f}")
+    return (x - resid(x) / denom(x))
+
+
+def conic_sag(r: np.ndarray, C=1 / 25.0, K=0.0):
+    """The sag of a conic section surface."""
+    return C * r**2 / (1 + np.sqrt(1 - (K + 1) * C**2 * r**2))
+
+
+def dconic_sag_dr(r: np.ndarray, C=1 / 25.0, K=0.0):
+    """The derivative of the sag of a conic section surface with respect to r."""
+    # Prevent divide-by-zero at the origin by adding a small epsilon to r
+    r = r + 1e-8
+    A = C / np.sqrt(1 - (K + 1) * C**2 * r**2)
+    return r * A
 
 
 def normal_vector(r: np.ndarray, theta, C=1 / 25.0, K=0.0):
@@ -46,11 +60,11 @@ def symmetric_normal_vector(r: np.ndarray, C=1 / 25.0, K=0.0):
     return np.vstack([2 * (z - 1 / C), 2 * y]).T
 
 
-def plot_func(x: np.ndarray, y: np.ndarray, ax):
+def plot_func(x: np.ndarray, y: np.ndarray, ax, x_label: str = "x", y_label: str = "f(x)"):
     ax.plot(x, y)
     ax.axhline(0, color="black", linestyle="--")
-    ax.set_xlabel("x")
-    ax.set_ylabel("f(x)")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
     ax.grid(True)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -58,14 +72,22 @@ def plot_func(x: np.ndarray, y: np.ndarray, ax):
     return ax
 
 
-def plot_init(x: np.ndarray, y: np.ndarray, debug: bool = False) -> None:
+def plot_init(
+    x: np.ndarray,
+    y: np.ndarray,
+    filename: str = "newton_raphson_example_function.png",
+    x_label: str = "x",
+    y_label: str = "f(x)",
+    debug: bool = False
+) -> None:
     _, ax = plt.subplots()
     ax = plot_func(x, y, ax)
-
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
     if debug:
         plt.show()
     else:
-        output_path = OUTPUT_DIR / "newton_raphson_example_function.png"
+        output_path = OUTPUT_DIR / filename
         plt.savefig(output_path)
         print(f"Plot saved to {output_path}")
 
@@ -111,9 +133,13 @@ def plot_step_by_step(
     y: np.ndarray,
     starting_point: float,
     filename: str,
+    resid_func = f,
+    denom_func = df,
     x_lim: tuple[float, float] = (-2, 2),
     y_lim: tuple[float, float] = (-2, 2),
     num_steps: int = 5,
+    x_label: str = "x",
+    y_label: str = "f(x)",
     debug: bool = False
 ) -> None:
     current_x = starting_point
@@ -123,24 +149,24 @@ def plot_step_by_step(
     axes = axes.flatten()  # Flatten in case of multiple rows
     
     for ctr, ax in enumerate(axes):
-        ax = plot_func(x, y, ax)
+        ax = plot_func(x, y, ax, x_label=x_label, y_label=y_label)
 
         # Plot the current point
-        current_y = f(current_x)
+        current_y = resid_func(current_x)
         ax.plot(current_x, current_y, "ro", label=f"Step {ctr}")
 
         # Draw the tangent line at the current point
-        slope = df(current_x)
+        slope = denom_func(current_x)
         tangent_x = np.linspace(current_x - 100, current_x + 100, 2)
         tangent_y = current_y + slope * (tangent_x - current_x)
         ax.plot(tangent_x, tangent_y, "r--", label="Tangent Line")
 
         ax.set_xlim(x_lim)
         ax.set_ylim(y_lim)
-        ax.set_title(f"Step {ctr}: x = {current_x:.6f}, f(x) = {current_y:.6f}")
+        ax.set_title(f"Step {ctr}: {x_label} = {current_x:.6f}, {y_label} = {current_y:.6f}")
 
         # Update the point for the next iteration
-        current_x = update(current_x)
+        current_x = update(current_x, resid=resid_func, denom=denom_func)
 
         ax.plot(current_x, 0, "kx")
 
@@ -155,12 +181,7 @@ def plot_step_by_step(
         print(f"Plot saved to {output_path}")
 
 
-def step_by_step(
-    x: np.ndarray,
-    y: np.ndarray,
-    starting_point: float,
-    num_steps: int = 5,
-) -> None:
+def step_by_step(starting_point: float, num_steps: int = 5) -> None:
     current_x = starting_point
     for step in range(num_steps):
         print(f"Step {step}: x = {current_x:.6f}, f(x) = {f(current_x):.6f}")
@@ -261,7 +282,7 @@ def plot_circle_with_normal_vector_saggita(C: float = 1 / 25.0, debug: bool = Fa
 def main(debug: bool):
     x = np.linspace(-2, 2, 64)
     y = f(x)
-    plot_init(x, y, debug)
+    plot_init(x, y, debug=debug)
     plot_construction(x, y, starting_point=1.5, debug=debug)
     plot_step_by_step(
         x,
@@ -283,7 +304,7 @@ def main(debug: bool):
         y_lim=(-3.0, 3.0),
         debug=debug,
     )
-    step_by_step(x, y, starting_point=-0.5, num_steps=20)
+    step_by_step(starting_point=-0.5, num_steps=20)
     plot_construction(
         x,
         y,
@@ -303,6 +324,44 @@ def main(debug: bool):
     )
     plot_circle_with_normal_vector_symmetric(C=1 / -2.2136, debug=debug)
     plot_circle_with_normal_vector_saggita(C=1 / -2.2136, debug=debug)
+
+    #==============================================================================================
+    # Residuals of ray_id=8 at the scan lens first surface
+    _, py, pz = 0.0, 0.5, -5.0 # Starting point
+    _, m, n = 0.0, 0.3420201433256687, 0.9396926207859084 # Direction cosines
+    C = -1.0 / 2.2136 # Curvature of the scan lens first surface
+    K = 0.0 # Spherical surface
+
+    s = np.linspace(2, 5.0, 100)
+    z = pz + s * n
+    y = py + s * m
+    sag = conic_sag(y, C=C, K=K)
+    residual = z - sag
+    s_init = -pz / n / 2.0 # bisected starting point due to NaN in sag formula
+    
+    plot_init(
+        s,
+        residual,
+        filename="newton_raphson_residual_ray_id_8.png",
+        x_label="s",
+        y_label="Residual, $z - \\text{sag}(0, y)$",
+        debug=debug
+    )
+    plot_step_by_step(
+        s,
+        residual,
+        starting_point=s_init,
+        filename="newton_raphson_residual_convergence_ray_id_8.png",
+        x_label="s",
+        y_label="Residual",
+        x_lim=(s.min(), s.max()),
+        y_lim=(-2.0, 2.0),
+        num_steps=5,
+        resid_func=lambda x: pz + x * n - conic_sag(py + x * m, C=C, K=K),
+        denom_func=lambda x: n - dconic_sag_dr(py + x * m, C=C, K=K) * m,
+        debug=debug
+    )
+
 
 
 if __name__ == "__main__":
